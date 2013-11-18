@@ -1,10 +1,21 @@
 package ch.tkuhn.memetools;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 public class CalculateMemeScores {
 
@@ -36,10 +47,11 @@ public class CalculateMemeScores {
 			printHelp();
 			System.exit(1);
 		}
-		String gramString = cmd.getOptionValue("g", "1");
-		int gram = 1;
-		if (gramString.matches("[1-9]")) {
-			gram = Integer.parseInt(gramString);
+		File inputFile = new File(cmd.getArgs()[0]);
+		String gramsString = cmd.getOptionValue("g", "1");
+		int grams = 1;
+		if (gramsString.matches("[1-9]")) {
+			grams = Integer.parseInt(gramsString);
 		} else {
 			System.err.println("ERROR: -g has to be an integer between 1 and 9");
 			printHelp();
@@ -66,7 +78,7 @@ public class CalculateMemeScores {
 			}
 		}
 
-		CalculateMemeScores c = new CalculateMemeScores(gram, n, year);
+		CalculateMemeScores c = new CalculateMemeScores(inputFile, grams, n, year);
 		c.run();
 	}
 
@@ -75,22 +87,82 @@ public class CalculateMemeScores {
 		formatter.printHelp("CalculateMemeScores <options> <inputfile>", options);
 	}
 
-	private int gram;
+	private File inputFile;
+	private int grams;
 	private int n;
 	private Integer year;
 
-	public CalculateMemeScores(int gram, int n, Integer year) {
-		this.gram = gram;
+	private int nt;
+	private Map<String,Integer> nm = new HashMap<>();
+
+	public CalculateMemeScores(File inputFile, int grams, int n, Integer year) {
+		this.inputFile = inputFile;
+		this.grams = grams;
 		this.n = n;
 		this.year = year;
 	}
 
-	public CalculateMemeScores(int gram, int n) {
-		this(gram, n, null);
+	public CalculateMemeScores(File inputFile, int gram, int n) {
+		this(inputFile, gram, n, null);
 	}
 
 	public void run() {
+		try {
+			System.out.println("Extracting terms from input file: " + inputFile);
+			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (!line.matches(".*\\|\\|\\|.*")) continue;
+				String citing = line.split("\\|\\|\\|")[0];
+				if (citing.matches("[0-9][0-9][0-9][0-9] .*")) {
+					int y = Integer.parseInt(citing.substring(0, 4));
+					if (year != null && y != year) continue;
+					citing = citing.substring(5);
+				}
+				nt = nt + 1;
+				List<String> words = getTerms(citing);
+				Map<String,Boolean> processed = new HashMap<>();
+				for (String word : words) {
+					if (word.length() < 2 || processed.containsKey(word)) continue;
+					if (nm.containsKey(word)) {
+						nm.put(word, nm.get(word)+1);
+					} else {
+						nm.put(word, 1);
+					}
+					processed.put(word, true);
+				}
+			}
+			reader.close();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println("Total number of documents: " + nt);
+		System.out.println("Total number of unique terms: " + nm.size());
 		// ...
+	}
+
+	private List<String> getTerms(String text) {
+		List<String> terms = new ArrayList<>();
+		String[] onegrams = text.split("\\s+");
+		List<String> previous = new ArrayList<>();
+		for (String t : onegrams) {
+			terms.add(t);
+			for (int x = 1; x < grams; x++) {
+				if (previous.size() > x-1) {
+					String term = t;
+					for (int y = 0; y < x; y++) {
+						term = previous.get(y) + " " + term;
+					}
+					terms.add(term);
+				}
+			}
+			previous.add(0, t);
+			while (previous.size() > grams-1) {
+				previous.remove(previous.size()-1);
+			}
+		}
+		return terms;
 	}
 
 }
