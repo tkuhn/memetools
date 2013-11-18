@@ -1,4 +1,4 @@
-package ch.tkuhn.memes;
+package ch.tkuhn.memetools;
 
 public class CalculcateMemeScores {
 
