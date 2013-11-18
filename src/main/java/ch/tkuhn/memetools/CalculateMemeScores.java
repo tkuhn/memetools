@@ -36,12 +36,61 @@ public class CalculateMemeScores {
 			printHelp();
 			System.exit(1);
 		}
-		// ...
+		String gramString = cmd.getOptionValue("g", "1");
+		int gram = 1;
+		if (gramString.matches("[1-9]")) {
+			gram = Integer.parseInt(gramString);
+		} else {
+			System.err.println("ERROR: -g has to be an integer between 1 and 9");
+			printHelp();
+			System.exit(1);
+		}
+		String nString = cmd.getOptionValue("g", "1");
+		int n = 1;
+		if (nString.matches("[0-9]{1,3}")) {
+			n = Integer.parseInt(nString);
+		} else {
+			System.err.println("ERROR: -g has to be an integer between 0 and 999");
+			printHelp();
+			System.exit(1);
+		}
+		String yearString = cmd.getOptionValue("y");
+		Integer year = null;
+		if (yearString != null) {
+			if (yearString.matches("[0-9]{1,4}")) {
+				year = Integer.parseInt(yearString);
+			} else {
+				System.err.println("ERROR: -y has to be an integer between 0 and 9999");
+				printHelp();
+				System.exit(1);
+			}
+		}
+
+		CalculateMemeScores c = new CalculateMemeScores(gram, n, year);
+		c.run();
 	}
 
 	public static void printHelp() {
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp("CalculateMemeScores <options> <inputfile>", options);
+	}
+
+	private int gram;
+	private int n;
+	private Integer year;
+
+	public CalculateMemeScores(int gram, int n, Integer year) {
+		this.gram = gram;
+		this.n = n;
+		this.year = year;
+	}
+
+	public CalculateMemeScores(int gram, int n) {
+		this(gram, n, null);
+	}
+
+	public void run() {
+		// ...
 	}
 
 }
