@@ -1,7 +1,6 @@
 package ch.tkuhn.memetools;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -9,104 +8,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import au.com.bytecode.opencsv.CSVReader;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 
 public class CalculateMemeScores {
 
-	private static Options options;
+	@Parameter(description = "files", required = true)
+	private List<String> inputFiles = new ArrayList<>();
 
-	static {
-		options = new Options();
-		options.addOption("g", true, "Use <arg>-grams");
-		options.addOption("y", true, "Calculate scores for year <arg>");
-		options.addOption("n", true, "Set n parameter to <arg>");
-	}
+	@Parameter(names = "-g", description = "Use <arg>-grams")
+	private int grams = 1;
+
+	@Parameter(names = "-y", description = "Calculate scores for year <arg>")
+	private Integer year;
+
+	@Parameter(names = "-n", description = "Set n parameter to <arg>")
+	private int n = 1;
 
 	public static final void main(String[] args) {
-		CommandLine cmd = null;
+		CalculateMemeScores obj = new CalculateMemeScores();
+		JCommander jc = new JCommander(obj);
 		try {
-			cmd = (new GnuParser()).parse(options, args);
-		} catch (ParseException ex) {
-			System.err.println("ERROR: " + ex.getMessage());
-			printHelp();
+			jc.parse(args);
+		} catch (ParameterException ex) {
+			jc.usage();
 			System.exit(1);
 		}
-		if (cmd.getArgList().size() == 0) {
-			System.err.println("ERROR: Specify input file");
-			printHelp();
-			System.exit(1);
-		}
-		if (cmd.getArgList().size() > 1) {
-			System.err.println("ERROR: Too many arguments");
-			printHelp();
-			System.exit(1);
-		}
-		File inputFile = new File(cmd.getArgs()[0]);
-		String gramsString = cmd.getOptionValue("g", "1");
-		int grams = 1;
-		if (gramsString.matches("[1-9]")) {
-			grams = Integer.parseInt(gramsString);
-		} else {
-			System.err.println("ERROR: -g has to be an integer between 1 and 9");
-			printHelp();
-			System.exit(1);
-		}
-		String nString = cmd.getOptionValue("g", "1");
-		int n = 1;
-		if (nString.matches("[0-9]{1,3}")) {
-			n = Integer.parseInt(nString);
-		} else {
-			System.err.println("ERROR: -g has to be an integer between 0 and 999");
-			printHelp();
-			System.exit(1);
-		}
-		String yearString = cmd.getOptionValue("y");
-		Integer year = null;
-		if (yearString != null) {
-			if (yearString.matches("[0-9]{1,4}")) {
-				year = Integer.parseInt(yearString);
-			} else {
-				System.err.println("ERROR: -y has to be an integer between 0 and 9999");
-				printHelp();
-				System.exit(1);
-			}
-		}
-
-		CalculateMemeScores c = new CalculateMemeScores(inputFile, grams, n, year);
-		c.run();
+		obj.run();
 	}
-
-	public static void printHelp() {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp("CalculateMemeScores <options> <inputfile>", options);
-	}
-
-	private File inputFile;
-	private int grams;
-	private int n;
-	private Integer year;
 
 	private int nt;
 	private Map<String,Integer> nm = new HashMap<>();
 
-	public CalculateMemeScores(File inputFile, int grams, int n, Integer year) {
-		this.inputFile = inputFile;
-		this.grams = grams;
-		this.n = n;
-		this.year = year;
-	}
-
-	public CalculateMemeScores(File inputFile, int gram, int n) {
-		this(inputFile, gram, n, null);
+	public CalculateMemeScores() {
 	}
 
 	public void run() {
+		for (String inputFile : inputFiles) {
+			run(inputFile);
+		}
+	}
+
+	public void run(String inputFile) {
 		try {
 			System.out.println("Extracting terms from input file: " + inputFile);
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
