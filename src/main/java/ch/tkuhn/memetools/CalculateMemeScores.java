@@ -105,7 +105,7 @@ public class CalculateMemeScores {
 		}
 		System.out.println("Total number of documents: " + nt);
 		System.out.println("Total number of unique terms: " + nm.size());
-		for (String v : nm.keySet()) {
+		for (String v : new ArrayList<String>(nm.keySet())) {
 			if (nm.get(v) < freqThreshold * nt || nm.get(v) < numberThreshold) {
 				nm.remove(v);
 			}
@@ -166,7 +166,7 @@ public class CalculateMemeScores {
 		try {
 			String basename = inputFile.getName().replaceAll("\\..*$", "");
 			String outputFile = "files/ms-" + basename + "-g" + grams + "-n" + n + "-y" + year + ".csv";
-			CSVWriter writer = new CSVWriter(new FileWriter(outputFile), ',', '"');
+			CSVWriter writer = new CSVWriter(new FileWriter(outputFile), ',', '"', '\\');
 			writer.writeNext(new String[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
 					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
 			for (String term : nm.keySet()) {
