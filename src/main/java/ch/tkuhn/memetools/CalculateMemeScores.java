@@ -89,15 +89,13 @@ public class CalculateMemeScores {
 				}
 				nt = nt + 1;
 				Map<String,Boolean> words = getTerms(citing);
-				Map<String,Boolean> processed = new HashMap<String,Boolean>();
 				for (String word : words.keySet()) {
-					if (word.length() < 2 || processed.containsKey(word)) continue;
+					if (word.length() < 2) continue;
 					if (nm.containsKey(word)) {
 						nm.put(word, nm.get(word)+1);
 					} else {
 						nm.put(word, 1);
 					}
-					processed.put(word, true);
 				}
 			}
 			reader.close();
@@ -136,27 +134,21 @@ public class CalculateMemeScores {
 					if (year != null && y != year) continue;
 					citing = citing.substring(5);
 				}
-				Map<String,Boolean> citingTerms = getTerms(citing);
+				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
 				String cited = splitline[1];
-				Map<String,Boolean> citedTerms = getTerms(cited);
-				Map<String,Boolean> processed = new HashMap<String,Boolean>();
+				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
 				et = et + 1;
 				for (String term : citedTerms.keySet()) {
-					if (!nm.containsKey(term) || processed.containsKey(term)) continue;
 					if (citingTerms.containsKey(term)) {
 						emm.put(term, emm.get(term) + 1);
 					} else {
 						emx.put(term, emx.get(term) + 1);
 					}
-					processed.put(term, true);
 				}
-				processed = new HashMap<String,Boolean>();
 				for (String term : citingTerms.keySet()) {
-					if (!nm.containsKey(term) || processed.containsKey(term)) continue;
 					if (!citedTerms.containsKey(term)) {
 						exm.put(term, exm.get(term) + 1);
 					}
-					processed.put(term, true);
 				}
 			}
 			reader.close();
@@ -191,6 +183,10 @@ public class CalculateMemeScores {
 
 	private Map<String,Boolean> getTerms(String text) {
 		return MemeUtils.getTerms(text, grams);
+	}
+
+	private Map<String,Boolean> getFilteredTerms(String text) {
+		return MemeUtils.getTerms(text, grams, nm);
 	}
 
 	private File getOutputFile(File inputFile) {

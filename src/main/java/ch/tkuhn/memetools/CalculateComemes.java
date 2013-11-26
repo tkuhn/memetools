@@ -107,20 +107,16 @@ public class CalculateComemes {
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					citing = citing.substring(5);
 				}
-				Map<String,Boolean> citingTerms = getTerms(citing);
+				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
 				String cited = splitline[1];
-				Map<String,Boolean> citedTerms = getTerms(cited);
+				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
 				for (String meme1 : memes.keySet()) {
 					boolean meme1Stick = false;
 					if (citedTerms.containsKey(meme1) && citingTerms.containsKey(meme1)) {
 						mst.put(meme1, mst.get(meme1) + 1);
 						meme1Stick = true;
 					}
-					Map<String,Boolean> processed = new HashMap<String,Boolean>();
 					for (String meme2 : citedTerms.keySet()) {
-						if (!memes.containsKey(meme2) || processed.containsKey(meme2)) {
-							continue;
-						}
 						boolean meme2Stick = false;
 						if (citedTerms.containsKey(meme2) && citingTerms.containsKey(meme2)) {
 							meme2Stick = true;
@@ -131,7 +127,6 @@ public class CalculateComemes {
 						if (!meme2Stick && meme2Stick) {
 							xmst.get(meme1).put(meme2, xmst.get(meme1).get(meme2) + 1);
 						}
-						processed.put(meme2, true);
 					}
 				}
 			}
@@ -165,8 +160,8 @@ public class CalculateComemes {
 		}
 	}
 
-	private Map<String,Boolean> getTerms(String text) {
-		return MemeUtils.getTerms(text, grams);
+	private Map<String,Boolean> getFilteredTerms(String text) {
+		return MemeUtils.getTerms(text, grams, memes);
 	}
 
 	private File getOutputFile(File inputFile) {

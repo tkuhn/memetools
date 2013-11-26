@@ -12,19 +12,23 @@ public class MemeUtils {
 
 	private MemeUtils() {}  // no instances allowed
 
-	public static Map<String,Boolean> getTerms(String text, int grams) {
+	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
 		Map<String,Boolean> terms = new HashMap<String,Boolean>();
 		String[] onegrams = text.split("\\s+");
 		List<String> previous = new ArrayList<String>();
 		for (String t : onegrams) {
-			terms.put(t, true);
+			if (filter == null || filter.containsKey(t)) {
+				terms.put(t, true);
+			}
 			for (int x = 1; x < grams; x++) {
 				if (previous.size() > x-1) {
 					String term = t;
 					for (int y = 0; y < x; y++) {
 						term = previous.get(y) + " " + term;
 					}
-					terms.put(term, true);
+					if (filter == null || filter.containsKey(t)) {
+						terms.put(term, true);
+					}
 				}
 			}
 			previous.add(0, t);
@@ -33,6 +37,10 @@ public class MemeUtils {
 			}
 		}
 		return terms;
+	}
+
+	public static Map<String,Boolean> getTerms(String text, int grams) {
+		return getTerms(text, grams, null);
 	}
 
 	private static DecimalFormat df = new DecimalFormat("0.##########");
