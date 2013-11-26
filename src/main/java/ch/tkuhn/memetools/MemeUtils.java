@@ -26,7 +26,7 @@ public class MemeUtils {
 					for (int y = 0; y < x; y++) {
 						term = previous.get(y) + " " + term;
 					}
-					if (filter == null || filter.containsKey(t)) {
+					if (filter == null || filter.containsKey(term)) {
 						terms.put(term, true);
 					}
 				}
