@@ -1,16 +1,17 @@
 package ch.tkuhn.memetools;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import au.com.bytecode.opencsv.CSVWriter;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -28,7 +29,7 @@ public class CalculateMemeScores {
 	private Integer year;
 
 	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 1;
+	private int n = 3;
 
 	@Parameter(names = "-fth", description = "Frequency threshold")
 	private int freqThreshold = 0;
@@ -110,6 +111,7 @@ public class CalculateMemeScores {
 				nm.remove(v);
 			}
 		}
+		System.out.println("Number of unique terms after pruning: " + nm.size());
 
 		for (String w : nm.keySet()) {
 			emm.put(w, 0);
@@ -131,7 +133,7 @@ public class CalculateMemeScores {
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					int y = Integer.parseInt(line.substring(0, 4));
 					if (year != null && y != year) continue;
-					citing = line.substring(5);
+					citing = citing.substring(5);
 				}
 				Map<String,Boolean> citingTerms = getTerms(citing);
 				String cited = splitline[1];
@@ -164,10 +166,8 @@ public class CalculateMemeScores {
 		System.out.println("Number of errors: " + errors);
 		System.out.println("Calculating meme scores and writing CSV file...");
 		try {
-			String basename = inputFile.getName().replaceAll("\\..*$", "");
-			String outputFile = "files/ms-" + basename + "-g" + grams + "-n" + n + "-y" + year + ".csv";
-			CSVWriter writer = new CSVWriter(new FileWriter(outputFile), ',', '"', '\\');
-			writer.writeNext(new String[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
+			Writer w = new BufferedWriter(new FileWriter(getOutputFile(inputFile)));
+			writeCsvLine(w, new Object[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
 					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
 			for (String term : nm.keySet()) {
 				int em = emm.get(term) + emx.get(term);
@@ -177,11 +177,11 @@ public class CalculateMemeScores {
 				double ps = stick / spark;
 				int absFq = nm.get(term);
 				double relFq = (double) absFq / nt;
-				double ms = ps * (absFq / nt);
-				writer.writeNext(new String[] { ms+"", term, absFq+"", relFq+"", emm.get(term)+"", em+"",
-						stick+"", exm.get(term)+"", ex+"", spark+"", ps+"" });
+				double ms = ps * relFq;
+				writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em,
+						stick, exm.get(term), ex, spark, ps });
 			}
-			writer.close();
+			w.close();
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			System.exit(1);
@@ -209,6 +209,36 @@ public class CalculateMemeScores {
 			}
 		}
 		return terms;
+	}
+
+	private File getOutputFile(File inputFile) {
+		String basename = inputFile.getName().replaceAll("\\..*$", "");
+		String filename = "files/ms-" + basename + "-g" + grams + "-n" + n;
+		if (year != null) {
+			filename += "-y" + year;
+		}
+		filename += ".csv";
+		return new File(filename);
+	}
+
+	private static DecimalFormat df = new DecimalFormat("0.##########");
+
+	private void writeCsvLine(Writer writer, Object[] line) throws IOException {
+		boolean first = true;
+		for (Object o : line) {
+			if (!first) writer.write(",");
+			first = false;
+			if (o instanceof String) {
+				String s = (String) o;
+				if (s.matches(".*[,\"].*")) {
+					s = "\"" + s.replaceAll("\"", "\\\"") + "\"";
+				}
+				writer.write(s);
+			} else {
+				writer.write(df.format(o));
+			}
+		}
+		writer.write("\n");
 	}
 
 }
