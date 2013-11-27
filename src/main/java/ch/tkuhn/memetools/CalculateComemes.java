@@ -117,6 +117,7 @@ public class CalculateComemes {
 						meme1Stick = true;
 					}
 					for (String meme2 : citedTerms.keySet()) {
+						if (meme1.compareTo(meme2) >= 0) continue;
 						boolean meme2Stick = false;
 						if (citedTerms.containsKey(meme2) && citingTerms.containsKey(meme2)) {
 							meme2Stick = true;
@@ -145,10 +146,13 @@ public class CalculateComemes {
 				int i = 0;
 				for (String meme2 : memes.keySet()) {
 					i = i + 1;
-					if (co.get(meme1).get(meme2) == 0) {
+					int coVal = getValue(co, meme1, meme2);
+					if (coVal == -1) {
+						row[i] = 1;
+					} else if (coVal == 0) {
 						row[i] = 0;
 					} else {
-						row[i] = (double) co.get(meme1).get(meme2) / ( xmst.get(meme1).get(meme2) + mst.get(meme1) );
+						row[i] = (double) coVal / ( getValue(xmst, meme1, meme2) + mst.get(meme1) );
 					}
 				}
 				MemeUtils.writeCsvLine(w, row);
@@ -168,6 +172,13 @@ public class CalculateComemes {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		String filename = "files/cm-" + basename + "-c" + count + ".csv";
 		return new File(filename);
+	}
+
+	private int getValue(Map<String,HashMap<String,Integer>> map, String meme1, String meme2) {
+		int c = meme1.compareTo(meme2);
+		if (c == 0) return -1;
+		if (c < 0) return map.get(meme1).get(meme2);
+		return map.get(meme2).get(meme1);
 	}
 
 }
