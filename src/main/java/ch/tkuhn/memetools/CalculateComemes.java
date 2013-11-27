@@ -51,13 +51,13 @@ public class CalculateComemes {
 
 	private int grams = 1;
 
-	private Map<String,Boolean> memes;
+	private Map<String,Integer> memes;
 	private Map<String,HashMap<String,Integer>> co;
 	private Map<String,HashMap<String,Integer>> xmst;
 	private Map<String,Integer> mst;
 
 	private void run() {
-		memes = new HashMap<String,Boolean>();
+		memes = new HashMap<String,Integer>();
 		co = new HashMap<String,HashMap<String,Integer>>();
 		xmst = new HashMap<String,HashMap<String,Integer>>();
 		mst = new HashMap<String,Integer>();
@@ -74,7 +74,7 @@ public class CalculateComemes {
 				String meme = row[1];
 				int l = meme.trim().split("\\s+").length;
 				if (l > grams) grams = l;
-				memes.put(meme, true);
+				memes.put(meme, c);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -139,7 +139,13 @@ public class CalculateComemes {
 		System.out.println("Number of errors: " + errors);
 		System.out.println("Calculating comeme scores and writing CSV file...");
 		try {
-			Writer w = new BufferedWriter(new FileWriter(getOutputFile(inputFile)));
+			Writer csvWriter = new BufferedWriter(new FileWriter(getOutputFile(inputFile, "csv")));
+			Writer gmlWriter = new BufferedWriter(new FileWriter(getOutputFile(inputFile, "gml")));
+			gmlWriter.write("graph [\n");
+			gmlWriter.write("directed 0\n");
+			for (String meme : memes.keySet()) {
+				gmlWriter.write("node [ id " + memes.get(meme) + " label \"" + meme.replaceAll("\"", "\\\"") + "\" ]\n");
+			}
 			for (String meme1 : memes.keySet()) {
 				Object[] row = new Object[count+1];
 				row[0] = meme1;
@@ -152,12 +158,20 @@ public class CalculateComemes {
 					} else if (coVal == 0) {
 						row[i] = 0;
 					} else {
-						row[i] = (double) coVal / ( getValue(xmst, meme1, meme2) + mst.get(meme1) );
+						double v = (double) coVal / ( getValue(xmst, meme1, meme2) + mst.get(meme1) );
+						row[i] = v;
+						if (meme1.compareTo(meme2) < 0) {
+							gmlWriter.write("edge [ source " + memes.get(meme1) +
+									" target " + memes.get(meme2) +
+									" value " + MemeUtils.formatNumber(v) + " ]\n");
+						}
 					}
 				}
-				MemeUtils.writeCsvLine(w, row);
+				MemeUtils.writeCsvLine(csvWriter, row);
 			}
-			w.close();
+			gmlWriter.write("]\n");
+			csvWriter.close();
+			gmlWriter.close();
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			System.exit(1);
@@ -168,9 +182,9 @@ public class CalculateComemes {
 		return MemeUtils.getTerms(text, grams, memes);
 	}
 
-	private File getOutputFile(File inputFile) {
+	private File getOutputFile(File inputFile, String ext) {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		String filename = "files/cm-" + basename + "-c" + count + ".csv";
+		String filename = "files/cm-" + basename + "-c" + count + "." + ext;
 		return new File(filename);
 	}
 

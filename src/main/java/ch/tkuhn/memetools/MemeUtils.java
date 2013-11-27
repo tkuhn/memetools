@@ -45,6 +45,10 @@ public class MemeUtils {
 
 	private static DecimalFormat df = new DecimalFormat("0.##########");
 
+	public static String formatNumber(Number n) {
+		return df.format(n);
+	}
+
 	public static void writeCsvLine(Writer writer, Object[] line) throws IOException {
 		boolean first = true;
 		for (Object o : line) {
