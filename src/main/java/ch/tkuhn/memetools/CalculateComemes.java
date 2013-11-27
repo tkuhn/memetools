@@ -98,11 +98,11 @@ public class CalculateComemes {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				if (!line.matches(".*\\|\\|\\|.*")) {
+				String[] splitline = (line + " ").split("\\|\\|\\|");
+				if (splitline.length != 2) {
 					errors = errors + 1;
 					continue;
 				}
-				String[] splitline = line.split("\\|\\|\\|");
 				String citing = splitline[0];
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					citing = citing.substring(5);

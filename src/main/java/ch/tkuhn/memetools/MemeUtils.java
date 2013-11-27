@@ -14,7 +14,7 @@ public class MemeUtils {
 
 	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
 		Map<String,Boolean> terms = new HashMap<String,Boolean>();
-		String[] onegrams = text.split("\\s+");
+		String[] onegrams = text.trim().split("\\s+");
 		List<String> previous = new ArrayList<String>();
 		for (String t : onegrams) {
 			if (filter == null || filter.containsKey(t)) {

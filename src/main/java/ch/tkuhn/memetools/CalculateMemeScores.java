@@ -123,7 +123,7 @@ public class CalculateMemeScores {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = line.split("\\|\\|\\|");
+				String[] splitline = (line + " ").split("\\|\\|\\|");
 				if (splitline.length != 2) {
 					errors = errors + 1;
 					continue;
