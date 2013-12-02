@@ -53,13 +53,11 @@ public class CalculateComemes {
 
 	private Map<String,Integer> memes;
 	private Map<String,HashMap<String,Integer>> co;
-	private Map<String,HashMap<String,Integer>> xmst;
 	private Map<String,Integer> mst;
 
 	private void run() {
 		memes = new HashMap<String,Integer>();
 		co = new HashMap<String,HashMap<String,Integer>>();
-		xmst = new HashMap<String,HashMap<String,Integer>>();
 		mst = new HashMap<String,Integer>();
 
 		System.out.println("Reading " + count + " memes from " + memeFileName);
@@ -84,11 +82,9 @@ public class CalculateComemes {
 
 		for (String meme1 : memes.keySet()) {
 			co.put(meme1, new HashMap<String,Integer>());
-			xmst.put(meme1, new HashMap<String,Integer>());
 			mst.put(meme1, 0);
 			for (String meme2 : memes.keySet()) {
 				co.get(meme1).put(meme2, 0);
-				xmst.get(meme1).put(meme2, 0);
 			}
 		}
 
@@ -125,9 +121,6 @@ public class CalculateComemes {
 						if (meme1Stick && meme2Stick) {
 							co.get(meme1).put(meme2, co.get(meme1).get(meme2) + 1);
 						}
-						if (!meme2Stick && meme2Stick) {
-							xmst.get(meme1).put(meme2, xmst.get(meme1).get(meme2) + 1);
-						}
 					}
 				}
 			}
@@ -158,7 +151,7 @@ public class CalculateComemes {
 					} else if (coVal == 0) {
 						row[i] = 0;
 					} else {
-						double v = (double) coVal / ( getValue(xmst, meme1, meme2) + mst.get(meme1) );
+						double v = (double) coVal / ( mst.get(meme1) + mst.get(meme2) - coVal );
 						row[i] = v;
 						if (meme1.compareTo(meme2) < 0) {
 							gmlWriter.write("edge [ source " + memes.get(meme1) +
