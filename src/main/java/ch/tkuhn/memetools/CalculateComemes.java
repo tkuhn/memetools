@@ -54,11 +54,13 @@ public class CalculateComemes {
 	private Map<String,Integer> memes;
 	private Map<String,HashMap<String,Integer>> co;
 	private Map<String,Integer> mst;
+	private int nxx;
 
 	private void run() {
 		memes = new HashMap<String,Integer>();
 		co = new HashMap<String,HashMap<String,Integer>>();
 		mst = new HashMap<String,Integer>();
+		nxx = 0;
 
 		System.out.println("Reading " + count + " memes from " + memeFileName);
 		try {
@@ -103,6 +105,7 @@ public class CalculateComemes {
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					citing = citing.substring(5);
 				}
+				nxx = nxx + 1;
 				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
 				String cited = splitline[1];
 				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
@@ -145,11 +148,10 @@ public class CalculateComemes {
 				int i = 0;
 				for (String meme2 : memes.keySet()) {
 					i = i + 1;
-					int n11 = getValue(co, meme1, meme2);
-					if (n11 == -1) {
+					if (meme1.equals(meme2)) {
 						row[i] = 1;
 					} else {
-						int nxx = memes.size();
+						int n11 = getValue(co, meme1, meme2);
 						int n1x = mst.get(meme1);
 						int n0x = nxx - n1x;
 						int nx1 = mst.get(meme2);
@@ -194,9 +196,9 @@ public class CalculateComemes {
 	}
 
 	private int getValue(Map<String,HashMap<String,Integer>> map, String meme1, String meme2) {
-		int c = meme1.compareTo(meme2);
-		if (c == 0) return -1;
-		if (c < 0) return map.get(meme1).get(meme2);
+		if (meme1.compareTo(meme2) < 0) {
+			return map.get(meme1).get(meme2);
+		}
 		return map.get(meme2).get(meme1);
 	}
 
