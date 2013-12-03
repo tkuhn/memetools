@@ -145,13 +145,25 @@ public class CalculateComemes {
 				int i = 0;
 				for (String meme2 : memes.keySet()) {
 					i = i + 1;
-					int coVal = getValue(co, meme1, meme2);
-					if (coVal == -1) {
+					int n11 = getValue(co, meme1, meme2);
+					if (n11 == -1) {
 						row[i] = 1;
-					} else if (coVal == 0) {
-						row[i] = 0;
 					} else {
-						double v = (double) coVal / ( mst.get(meme1) + mst.get(meme2) - coVal );
+						int nxx = memes.size();
+						int n1x = mst.get(meme1);
+						int n0x = nxx - n1x;
+						int nx1 = mst.get(meme2);
+						int nx0 = nxx - nx1;
+						int n10 = n1x - n11;
+						int n01 = nx1 - n11;
+						int n00 = nxx - n11 - n10 -n01;
+						double v = 0;
+						//v = (double) n11 / ( n01 + n10 + n11 );
+						// Phi coefficient:
+						int np = n1x * n0x * nx1 * nx0;
+						if (np != 0) {
+							v = ( (n11 * n00) - (n10 * n01) ) / Math.sqrt(np);
+						}
 						row[i] = v;
 						if (meme1.compareTo(meme2) < 0) {
 							gmlWriter.write("edge [ source " + memes.get(meme1) +
