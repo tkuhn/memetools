@@ -162,9 +162,9 @@ public class CalculateComemes {
 						double v = 0;
 						//v = (double) n11 / ( n01 + n10 + n11 );
 						// Phi coefficient:
-						int np = n1x * n0x * nx1 * nx0;
+						double np = (double) n1x * (double) n0x * (double) nx1 * (double) nx0;
 						if (np != 0) {
-							v = ( (n11 * n00) - (n10 * n01) ) / Math.sqrt(np);
+							v = ( ((double) n11 * (double) n00) - ((double) n10 * (double) n01) ) / Math.sqrt(np);
 						}
 						row[i] = v;
 						if (meme1.compareTo(meme2) < 0) {
