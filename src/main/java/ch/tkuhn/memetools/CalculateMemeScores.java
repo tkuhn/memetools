@@ -29,6 +29,12 @@ public class CalculateMemeScores {
 	@Parameter(names = "-y", description = "Calculate scores for given year")
 	private Integer year;
 
+	@Parameter(names = "-ys", description = "Calculate scores for time period with given start year")
+	private Integer yearStart;
+
+	@Parameter(names = "-ye", description = "Calculate scores for time period with given end year")
+	private Integer yearEnd;
+
 	@Parameter(names = "-n", description = "Set n parameter")
 	private int n = 3;
 
@@ -84,8 +90,7 @@ public class CalculateMemeScores {
 				String citing = line.split("\\|\\|\\|")[0];
 				if (citing.matches("[0-9][0-9][0-9][0-9] .*")) {
 					int y = Integer.parseInt(citing.substring(0, 4));
-					if (year != null && y != year) continue;
-					citing = citing.substring(5);
+					if (considerYear(y)) citing = citing.substring(5);
 				}
 				nt = nt + 1;
 				Map<String,Boolean> words = getTerms(citing);
@@ -131,8 +136,7 @@ public class CalculateMemeScores {
 				String citing = splitline[0];
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					int y = Integer.parseInt(line.substring(0, 4));
-					if (year != null && y != year) continue;
-					citing = citing.substring(5);
+					if (considerYear(y)) citing = citing.substring(5);
 				}
 				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
 				String cited = splitline[1];
@@ -197,6 +201,13 @@ public class CalculateMemeScores {
 		}
 		filename += ".csv";
 		return new File(filename);
+	}
+
+	private boolean considerYear(int y) {
+		if (year != null && y != year) return false;
+		if (yearStart != null && y < yearStart) return false;
+		if (yearEnd != null && y > yearEnd) return false;
+		return true;
 	}
 
 }
