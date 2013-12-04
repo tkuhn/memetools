@@ -90,7 +90,8 @@ public class CalculateMemeScores {
 				String citing = line.split("\\|\\|\\|")[0];
 				if (citing.matches("[0-9][0-9][0-9][0-9] .*")) {
 					int y = Integer.parseInt(citing.substring(0, 4));
-					if (considerYear(y)) citing = citing.substring(5);
+					if (!considerYear(y)) continue;
+					citing = citing.substring(5);
 				}
 				nt = nt + 1;
 				Map<String,Boolean> words = getTerms(citing);
@@ -136,7 +137,8 @@ public class CalculateMemeScores {
 				String citing = splitline[0];
 				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
 					int y = Integer.parseInt(line.substring(0, 4));
-					if (considerYear(y)) citing = citing.substring(5);
+					if (!considerYear(y)) continue;
+					citing = citing.substring(5);
 				}
 				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
 				String cited = splitline[1];
