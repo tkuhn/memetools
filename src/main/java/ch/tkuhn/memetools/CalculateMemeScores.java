@@ -198,6 +198,11 @@ public class CalculateMemeScores {
 		String filename = "files/ms-" + basename + "-g" + grams + "-n" + n;
 		if (year != null) {
 			filename += "-y" + year;
+		} else if (yearStart != null || yearEnd != null) {
+			filename += "-y";
+			if (yearStart != null) filename += yearStart;
+			filename += "TO";
+			if (yearEnd != null) filename += yearEnd;
 		}
 		filename += ".csv";
 		return new File(filename);
