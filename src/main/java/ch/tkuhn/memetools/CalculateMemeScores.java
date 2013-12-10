@@ -96,6 +96,7 @@ public class CalculateMemeScores {
 					if (!citedTerms.containsKey(term)) continue;
 					if (emm.containsKey(term)) {
 						emm.put(term, emm.get(term) + 1);
+					} else {
 						emm.put(term, 1);
 					}
 				}
