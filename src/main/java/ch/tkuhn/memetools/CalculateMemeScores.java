@@ -38,12 +38,6 @@ public class CalculateMemeScores {
 	@Parameter(names = "-n", description = "Set n parameter")
 	private int n = 3;
 
-	@Parameter(names = "-fth", description = "Frequency threshold")
-	private int freqThreshold = 0;
-
-	@Parameter(names = "-nth", description = "Number threshold")
-	private int numberThreshold = 2;
-
 	public static final void main(String[] args) {
 		CalculateMemeScores obj = new CalculateMemeScores();
 		JCommander jc = new JCommander(obj);
@@ -87,20 +81,22 @@ public class CalculateMemeScores {
 			String line;
 			while ((line = reader.readLine()) != null) {
 				if (!line.matches(".*\\|\\|\\|.*")) continue;
-				String citing = line.split("\\|\\|\\|")[0];
+				String[] splitline = (line + " ").split("\\|\\|\\|");
+				String citing = splitline[0];
 				if (citing.matches("[0-9][0-9][0-9][0-9] .*")) {
 					int y = Integer.parseInt(citing.substring(0, 4));
 					if (!considerYear(y)) continue;
 					citing = citing.substring(5);
 				}
 				nt = nt + 1;
-				Map<String,Boolean> words = getTerms(citing);
-				for (String word : words.keySet()) {
-					if (word.length() < 2) continue;
-					if (nm.containsKey(word)) {
-						nm.put(word, nm.get(word)+1);
-					} else {
-						nm.put(word, 1);
+				Map<String,Boolean> citingTerms = getTerms(citing);
+				String cited = splitline[1];
+				Map<String,Boolean> citedTerms = getTerms(cited);
+				for (String term : citingTerms.keySet()) {
+					if (!citedTerms.containsKey(term)) continue;
+					if (emm.containsKey(term)) {
+						emm.put(term, emm.get(term) + 1);
+						emm.put(term, 1);
 					}
 				}
 			}
@@ -110,16 +106,10 @@ public class CalculateMemeScores {
 			System.exit(1);
 		}
 		System.out.println("Total number of documents: " + nt);
-		System.out.println("Total number of unique terms: " + nm.size());
-		for (String v : new ArrayList<String>(nm.keySet())) {
-			if (nm.get(v) < freqThreshold * nt || nm.get(v) < numberThreshold) {
-				nm.remove(v);
-			}
-		}
-		System.out.println("Number of unique terms after pruning: " + nm.size());
+		System.out.println("Number of unique terms with meme score > 0: " + emm.size());
 
-		for (String w : nm.keySet()) {
-			emm.put(w, 0);
+		for (String w : emm.keySet()) {
+			nm.put(w, 0);
 			emx.put(w, 0);
 			exm.put(w, 0);
 		}
@@ -145,13 +135,12 @@ public class CalculateMemeScores {
 				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
 				et = et + 1;
 				for (String term : citedTerms.keySet()) {
-					if (citingTerms.containsKey(term)) {
-						emm.put(term, emm.get(term) + 1);
-					} else {
+					if (!citingTerms.containsKey(term)) {
 						emx.put(term, emx.get(term) + 1);
 					}
 				}
 				for (String term : citingTerms.keySet()) {
+					nm.put(term, nm.get(term) + 1);
 					if (!citedTerms.containsKey(term)) {
 						exm.put(term, exm.get(term) + 1);
 					}
@@ -192,7 +181,7 @@ public class CalculateMemeScores {
 	}
 
 	private Map<String,Boolean> getFilteredTerms(String text) {
-		return MemeUtils.getTerms(text, grams, nm);
+		return MemeUtils.getTerms(text, grams, emm);
 	}
 
 	private File getOutputFile(File inputFile) {
