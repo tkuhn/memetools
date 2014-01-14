@@ -23,9 +23,6 @@ public class CalculateMemeScores {
 
 	private File inputFile;
 
-	@Parameter(names = "-g", description = "Use X-grams")
-	private int grams = 1;
-
 	@Parameter(names = "-y", description = "Calculate scores for given year")
 	private Integer year;
 
@@ -37,6 +34,8 @@ public class CalculateMemeScores {
 
 	@Parameter(names = "-n", description = "Set n parameter")
 	private int n = 3;
+
+	private File logFile;
 
 	public static final void main(String[] args) {
 		CalculateMemeScores obj = new CalculateMemeScores();
@@ -67,6 +66,9 @@ public class CalculateMemeScores {
 	}
 
 	public void run() {
+		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
+		if (logFile.exists()) logFile.delete();
+
 		nm = new HashMap<String,Integer>();
 		et = 0;
 		emm = new HashMap<String,Integer>();
@@ -74,7 +76,7 @@ public class CalculateMemeScores {
 		exm = new HashMap<String,Integer>();
 
 		try {
-			System.out.println("Extracting terms from input file: " + inputFile);
+			log("Extracting terms from input file: " + inputFile);
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -85,11 +87,11 @@ public class CalculateMemeScores {
 			}
 			reader.close();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			log(ex);
 			System.exit(1);
 		}
-		System.out.println("Total number of documents: " + et);
-		System.out.println("Number of unique terms with meme score > 0: " + emm.size());
+		log("Total number of documents: " + et);
+		log("Number of unique terms with meme score > 0: " + emm.size());
 
 		for (String w : emm.keySet()) {
 			nm.put(w, 0);
@@ -98,7 +100,7 @@ public class CalculateMemeScores {
 		}
 		int errors = 0;
 		try {
-			System.out.println("Counting terms...");
+			log("Counting terms...");
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -109,13 +111,14 @@ public class CalculateMemeScores {
 			}
 			reader.close();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			log(ex);
 			System.exit(1);
 		}
-		System.out.println("Number of errors: " + errors);
-		System.out.println("Calculating meme scores and writing CSV file...");
+		log("Number of errors: " + errors);
+		log("Calculating meme scores and writing CSV file...");
 		try {
-			Writer w = new BufferedWriter(new FileWriter(getOutputFile(inputFile)));
+			File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+			Writer w = new BufferedWriter(new FileWriter(csvFile));
 			MemeUtils.writeCsvLine(w, new Object[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
 					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
 			for (String term : nm.keySet()) {
@@ -132,14 +135,14 @@ public class CalculateMemeScores {
 			}
 			w.close();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			log(ex);
 			System.exit(1);
 		}
 	}
 
-	private File getOutputFile(File inputFile) {
+	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		String filename = "files/ms-" + basename + "-g" + grams + "-n" + n;
+		String filename = "ms-" + basename + "-n" + n;
 		if (year != null) {
 			filename += "-y" + year;
 		} else if (yearStart != null || yearEnd != null) {
@@ -148,8 +151,7 @@ public class CalculateMemeScores {
 			filename += "TO";
 			if (yearEnd != null) filename += yearEnd;
 		}
-		filename += ".csv";
-		return new File(filename);
+		return filename;
 	}
 
 	private boolean considerYear(int y) {
@@ -157,6 +159,10 @@ public class CalculateMemeScores {
 		if (yearStart != null && y < yearStart) return false;
 		if (yearEnd != null && y > yearEnd) return false;
 		return true;
+	}
+
+	private void log(Object obj) {
+		MemeUtils.log(logFile, obj);
 	}
 
 }

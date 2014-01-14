@@ -25,12 +25,6 @@ import com.beust.jcommander.ParameterException;
 
 public class PrepareApsData {
 
-	@Parameter(names = "-r", description = "Path to read raw data")
-	private String rawDataPath = "data";
-
-	@Parameter(names = "-p", description = "Path to write prepared data")
-	private String preparedDataPath = "input";
-
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
 
@@ -71,12 +65,12 @@ public class PrepareApsData {
 			writeDataFiles();
 			writeGmlFile();
 		} catch (IOException ex) {
-			ex.printStackTrace();
+			log(ex);
 		}
 	}
 
 	private void init() {
-		logFile = new File(preparedDataPath + "/aps.log");
+		logFile = new File(MemeUtils.getLogDir(), "prepare-aps.log");
 		if (logFile.exists()) logFile.delete();
 
 		log("Starting...");
@@ -92,7 +86,7 @@ public class PrepareApsData {
 
 	private void processMetadataDir() throws IOException {
 		log("Reading metadata...");
-		File metadataDir = new File(rawDataPath + "/" + metadataFolder);
+		File metadataDir = new File(MemeUtils.getRawDataDir(), metadataFolder);
 		Files.walkFileTree(metadataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -166,7 +160,7 @@ public class PrepareApsData {
 
 	private void processAbstractDir() throws IOException {
 		log("Reading abstracts...");
-		File abstractDir = new File(rawDataPath + "/" + abstractFolder);
+		File abstractDir = new File(MemeUtils.getRawDataDir(), abstractFolder);
 		Files.walkFileTree(abstractDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -196,7 +190,7 @@ public class PrepareApsData {
 
 	private void processCitationFile() throws IOException {
 		log("Reading citations...");
-		File file = new File(rawDataPath + "/" + citationFile);
+		File file = new File(MemeUtils.getRawDataDir(), citationFile);
 		BufferedReader r = new BufferedReader(new FileReader(file));
 		String line;
 		int invalid = 0;
@@ -231,8 +225,8 @@ public class PrepareApsData {
 	}
 
 	private void writeDataFiles() throws IOException {
-		File fileT = new File(preparedDataPath + "/aps-T.txt");
-		File fileTA = new File(preparedDataPath + "/aps-TA.txt");
+		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T.txt");
+		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA.txt");
 		int noAbstracts = 0;
 		BufferedWriter wT = new BufferedWriter(new FileWriter(fileT));
 		BufferedWriter wTA = new BufferedWriter(new FileWriter(fileTA));
@@ -257,7 +251,7 @@ public class PrepareApsData {
 	}
 
 	private void writeGmlFile() throws IOException {
-		File file = new File(preparedDataPath + "/aps.gml");
+		File file = new File(MemeUtils.getPreparedDataDir(), "aps.gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
@@ -290,12 +284,12 @@ public class PrepareApsData {
 		w.close();
 	}
 
-	private void log(Object text) {
-		MemeUtils.log(logFile, text);
+	private void log(Object obj) {
+		MemeUtils.log(logFile, obj);
 	}
 
-	void logDetail(Object text) {
-		if (verbose) log(text);
+	void logDetail(Object obj) {
+		if (verbose) log(obj);
 	}
 
 }

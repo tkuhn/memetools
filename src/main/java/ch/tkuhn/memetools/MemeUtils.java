@@ -18,6 +18,48 @@ public class MemeUtils {
 
 	private MemeUtils() {}  // no instances allowed
 
+	private static final String logDirName = "log";
+	private static final String rawDataDirName = "data";
+	private static final String preparedDataDirName = "input";
+	private static final String outputDataDirName = "files";
+
+	private static File logDir;
+	private static File rawDataDir;
+	private static File preparedDataDir;
+	private static File outputDataDir;
+
+	public static File getLogDir() {
+		if (logDir == null) {
+			logDir = new File(logDirName);
+			if (!logDir.exists()) logDir.mkdir();
+		}
+		return logDir;
+	}
+
+	public static File getRawDataDir() {
+		if (rawDataDir == null) {
+			rawDataDir = new File(rawDataDirName);
+			if (!rawDataDir.exists()) rawDataDir.mkdir();
+		}
+		return rawDataDir;
+	}
+
+	public static File getPreparedDataDir() {
+		if (preparedDataDir == null) {
+			preparedDataDir = new File(preparedDataDirName);
+			if (!preparedDataDir.exists()) preparedDataDir.mkdir();
+		}
+		return preparedDataDir;
+	}
+
+	public static File getOutputDataDir() {
+		if (outputDataDir == null) {
+			outputDataDir = new File(outputDataDirName);
+			if (!outputDataDir.exists()) outputDataDir.mkdir();
+		}
+		return outputDataDir;
+	}
+
 	public static void collectTerms(String text, int grams, Object filter, Map<String,Boolean> terms) {
 		String[] onegrams = text.trim().split("\\s+");
 		List<String> previous = new ArrayList<String>();
@@ -89,12 +131,16 @@ public class MemeUtils {
 		return text.trim();
 	}
 
-	public static void log(File logFile, Object text) {
+	public static void log(File logFile, Object obj) {
 		try {
 		    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(logFile, true)));
 		    String timestamp = new Timestamp(new Date().getTime()).toString();
-		    timestamp = timestamp.replaceFirst("\\.[0-9]*$", "");
-		    out.println(timestamp + " " + text);
+		    if (obj instanceof Throwable) {
+		    	((Throwable) obj).printStackTrace(out);
+		    } else {
+			    timestamp = timestamp.replaceFirst("\\.[0-9]*$", "");
+			    out.println(timestamp + " " + obj);
+		    }
 		    out.close();
 		} catch (IOException ex) {
 		    ex.printStackTrace();
