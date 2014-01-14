@@ -98,9 +98,8 @@ public class DataEntry {
 		}
 	}
 
-	public void recordCitedTerms(Map<String,Integer> disappearingMap, Object filter) {
+	public void recordCitedTerms(Map<String,Integer> map, Object filter) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
-		String citing = " " + text + " ";
 		for (String cited : citedText) {
 			String[] tokens = cited.trim().split(" ");
 			for (int p1 = 0 ; p1 < tokens.length ; p1++) {
@@ -111,9 +110,7 @@ public class DataEntry {
 					if (ignoreTerm(t, filter)) continue;
 					if (processed.containsKey(t)) continue;
 					processed.put(t, true);
-					if (disappearingMap != null && !citing.contains(term)) {
-						increaseMapEntry(disappearingMap, t);
-					}
+					increaseMapEntry(map, t);
 				}
 			}
 		}

@@ -59,7 +59,7 @@ public class CalculateMemeScores {
 
 	private int et;
 	private Map<String,Integer> emm;
-	private Map<String,Integer> emx;
+	private Map<String,Integer> em;
 	private Map<String,Integer> exm;
 
 	public CalculateMemeScores() {
@@ -72,7 +72,7 @@ public class CalculateMemeScores {
 		nm = new HashMap<String,Integer>();
 		et = 0;
 		emm = new HashMap<String,Integer>();
-		emx = new HashMap<String,Integer>();
+		em = new HashMap<String,Integer>();
 		exm = new HashMap<String,Integer>();
 
 		try {
@@ -95,7 +95,7 @@ public class CalculateMemeScores {
 
 		for (String w : emm.keySet()) {
 			nm.put(w, 0);
-			emx.put(w, 0);
+			em.put(w, 0);
 			exm.put(w, 0);
 		}
 		int errors = 0;
@@ -106,7 +106,7 @@ public class CalculateMemeScores {
 			while ((line = reader.readLine()) != null) {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				d.recordCitedTerms(emx, emm);
+				d.recordCitedTerms(em, emm);
 				d.recordTerms(nm, null, exm, emm);
 			}
 			reader.close();
@@ -122,15 +122,14 @@ public class CalculateMemeScores {
 			MemeUtils.writeCsvLine(w, new Object[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
 					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
 			for (String term : nm.keySet()) {
-				int em = emm.get(term) + emx.get(term);
-				int ex = et - em;
-				double stick = (double) emm.get(term) / (em + n);
+				int ex = et - em.get(term);
+				double stick = (double) emm.get(term) / (em.get(term) + n);
 				double spark = (double) (exm.get(term) + n) / (ex + n);
 				double ps = stick / spark;
 				int absFq = nm.get(term);
 				double relFq = (double) absFq / et;
 				double ms = ps * relFq;
-				MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em,
+				MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em.get(term),
 						stick, exm.get(term), ex, spark, ps });
 			}
 			w.close();
