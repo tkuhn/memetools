@@ -99,7 +99,7 @@ public class CalculateComemes {
 				DataEntry d = new DataEntry(line);
 				nxx = nxx + 1;
 				Map<String,Boolean> citingTerms = getFilteredTerms(d.getText());
-				Map<String,Boolean> citedTerms = new HashMap<>();
+				Map<String,Boolean> citedTerms = new HashMap<String,Boolean>();
 				for (String s : d.getCitedText()) {
 					collectFilteredTerms(s, citedTerms);
 				}
