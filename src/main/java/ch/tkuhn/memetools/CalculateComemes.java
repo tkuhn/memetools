@@ -96,19 +96,18 @@ public class CalculateComemes {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = (line + " ").split("\\|\\|\\|");
-				if (splitline.length != 2) {
+				String[] splitline = line.split("  ");
+				if (splitline.length < 3) {
 					errors = errors + 1;
 					continue;
 				}
-				String citing = splitline[0];
-				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
-					citing = citing.substring(5);
-				}
+				String citing = splitline[2];
 				nxx = nxx + 1;
 				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
-				String cited = splitline[1];
-				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
+				Map<String,Boolean> citedTerms = new HashMap<>();
+				for (int i = 3 ; i < splitline.length ; i++) {
+					collectFilteredTerms(splitline[i], citedTerms);
+				}
 				for (String meme1 : memes.keySet()) {
 					boolean meme1Stick = false;
 					if (citedTerms.containsKey(meme1) && citingTerms.containsKey(meme1)) {
@@ -187,6 +186,10 @@ public class CalculateComemes {
 
 	private Map<String,Boolean> getFilteredTerms(String text) {
 		return MemeUtils.getTerms(text, grams, memes);
+	}
+
+	private void collectFilteredTerms(String text, Map<String,Boolean> terms) {
+		MemeUtils.collectTerms(text, grams, memes, terms);
 	}
 
 	private File getOutputFile(File inputFile, String ext) {

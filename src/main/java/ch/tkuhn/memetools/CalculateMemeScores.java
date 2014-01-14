@@ -80,18 +80,16 @@ public class CalculateMemeScores {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				if (!line.matches(".*\\|\\|\\|.*")) continue;
-				String[] splitline = (line + " ").split("\\|\\|\\|");
-				String citing = splitline[0];
-				if (citing.matches("[0-9][0-9][0-9][0-9] .*")) {
-					int y = Integer.parseInt(citing.substring(0, 4));
-					if (!considerYear(y)) continue;
-					citing = citing.substring(5);
-				}
+				String[] splitline = line.split("  ");
+				int y = Integer.parseInt(splitline[1].substring(0, 4));
+				if (!considerYear(y)) continue;
+				String citing = splitline[2];
 				nt = nt + 1;
 				Map<String,Boolean> citingTerms = getTerms(citing);
-				String cited = splitline[1];
-				Map<String,Boolean> citedTerms = getTerms(cited);
+				Map<String,Boolean> citedTerms = new HashMap<>();
+				for (int i = 3 ; i < splitline.length ; i++) {
+					collectTerms(splitline[i], citedTerms);
+				}
 				for (String term : citingTerms.keySet()) {
 					if (!citedTerms.containsKey(term)) continue;
 					if (emm.containsKey(term)) {
@@ -120,21 +118,20 @@ public class CalculateMemeScores {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = (line + " ").split("\\|\\|\\|");
-				if (splitline.length != 2) {
-					errors = errors + 1;
+				String[] splitline = line.split("  ");
+				if (splitline.length < 3) {
+					errors++;
 					continue;
 				}
-				String citing = splitline[0];
-				if (line.substring(0, 5).matches("[0-9][0-9][0-9][0-9] ")) {
-					int y = Integer.parseInt(line.substring(0, 4));
-					if (!considerYear(y)) continue;
-					citing = citing.substring(5);
-				}
+				int y = Integer.parseInt(splitline[1].substring(0, 4));
+				if (!considerYear(y)) continue;
+				String citing = splitline[2];
 				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
-				String cited = splitline[1];
-				Map<String,Boolean> citedTerms = getFilteredTerms(cited);
-				et = et + 1;
+				Map<String,Boolean> citedTerms = new HashMap<>();
+				for (int i = 3 ; i < splitline.length ; i++) {
+					collectFilteredTerms(splitline[i], citedTerms);
+				}
+				et++;
 				for (String term : citedTerms.keySet()) {
 					if (!citingTerms.containsKey(term)) {
 						emx.put(term, emx.get(term) + 1);
@@ -181,8 +178,16 @@ public class CalculateMemeScores {
 		return MemeUtils.getTerms(text, grams);
 	}
 
+	private void collectTerms(String text, Map<String,Boolean> terms) {
+		MemeUtils.collectTerms(text, grams, terms);
+	}
+
 	private Map<String,Boolean> getFilteredTerms(String text) {
 		return MemeUtils.getTerms(text, grams, emm);
+	}
+
+	private void collectFilteredTerms(String text, Map<String,Boolean> terms) {
+		MemeUtils.collectTerms(text, grams, emm, terms);
 	}
 
 	private File getOutputFile(File inputFile) {

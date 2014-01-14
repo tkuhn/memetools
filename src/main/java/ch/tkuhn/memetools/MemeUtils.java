@@ -20,8 +20,7 @@ public class MemeUtils {
 
 	public static final String SEP = "  ";
 
-	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
-		Map<String,Boolean> terms = new HashMap<String,Boolean>();
+	public static void collectTerms(String text, int grams, Map<String,?> filter, Map<String,Boolean> terms) {
 		String[] onegrams = text.trim().split("\\s+");
 		List<String> previous = new ArrayList<String>();
 		for (String t : onegrams) {
@@ -44,6 +43,15 @@ public class MemeUtils {
 				previous.remove(previous.size()-1);
 			}
 		}
+	}
+
+	public static void collectTerms(String text, int grams, Map<String,Boolean> terms) {
+		collectTerms(text, grams, null, terms);
+	}
+
+	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
+		Map<String,Boolean> terms = new HashMap<String,Boolean>();
+		collectTerms(text, grams, filter, terms);
 		return terms;
 	}
 
