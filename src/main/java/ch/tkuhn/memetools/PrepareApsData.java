@@ -1,8 +1,10 @@
 package ch.tkuhn.memetools;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -10,15 +12,41 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+
+import static ch.tkuhn.memetools.MemeUtils.SEP;
+
 public class PrepareApsData {
 
-	public static void run(PrepareData superProcess) {
-		PrepareApsData obj = new PrepareApsData(superProcess);
+	@Parameter(names = "-r", description = "Path to read raw data")
+	private String rawDataPath = "data";
+
+	@Parameter(names = "-p", description = "Path to write prepared data")
+	private String preparedDataPath = "input";
+
+	@Parameter(names = "-v", description = "Write detailed log")
+	private boolean verbose = false;
+
+	private File logFile;
+
+	public static final void main(String[] args) {
+		PrepareApsData obj = new PrepareApsData();
+		JCommander jc = new JCommander(obj);
+		try {
+			jc.parse(args);
+		} catch (ParameterException ex) {
+			jc.usage();
+			System.exit(1);
+		}
 		obj.run();
 	}
 
@@ -26,108 +54,130 @@ public class PrepareApsData {
 	private static String abstractFolder = "aps-abstracts";
 	private static String citationFile = "aps-dataset-citations/citing_cited.csv";
 
-	private PrepareData s;
-
 	private Map<String,String> titles;
-	private Map<String,Short> years;
+	private Map<String,String> dates;
 	private Map<String,String> abstracts;
+	private Map<String,List<String>> citations;
 
-	public PrepareApsData(PrepareData superProcess) {
-		this.s = superProcess;
+	private Set<FileVisitOption> walkFileTreeOptions;
+
+	public PrepareApsData() {
 	}
 
 	public void run() {
+		init();
+		try {
+			processMetadataDir();
+			processAbstractDir();
+			processCitationFile();
+			writeDataFiles();
+			writeGmlFile();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private void init() {
+		logFile = new File(preparedDataPath + "/aps.log");
+		if (logFile.exists()) logFile.delete();
+
 		log("Starting...");
+
 		titles = new HashMap<String,String>();
-		years = new HashMap<String,Short>();
+		dates = new HashMap<String,String>();
 		abstracts = new HashMap<String,String>();
-		Set<FileVisitOption> walkFileTreeOptions = new HashSet<FileVisitOption>();
+		citations = new HashMap<String,List<String>>();
+
+		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
+	}
 
+	private void processMetadataDir() throws IOException {
 		log("Reading metadata...");
-		File metadataDir = new File(s.getRawDataPath() + "/" + metadataFolder);
-		try {
-			Files.walkFileTree(metadataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-					if (path.toString().endsWith(".xml")) {
-						processMetadataFile(path);
-					}
-					return FileVisitResult.CONTINUE;
+		File metadataDir = new File(rawDataPath + "/" + metadataFolder);
+		Files.walkFileTree(metadataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				if (path.toString().endsWith(".xml")) {
+					processMetadataFile(path);
 				}
-			});
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
+				return FileVisitResult.CONTINUE;
+			}
+		});
 		log("Number of documents: " + titles.size());
-
-		log("Reading abstracts...");
-		File abstractDir = new File(s.getRawDataPath() + "/" + abstractFolder);
-		try {
-			Files.walkFileTree(abstractDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-					if (path.toString().endsWith(".txt")) {
-						processAbstractFile(path);
-					}
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-
-		// TODO
 	}
 
 	private void processMetadataFile(Path path) {
 		log("Reading metadata file: " + path);
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
+			BufferedReader r = new BufferedReader(new FileReader(path.toFile()));
+			int errors = 0;
 			String doi = null;
-			Short year = null;
+			String date = null;
 			String line;
-			while ((line = br.readLine()) != null) {
+			while ((line = r.readLine()) != null) {
 				line = line.trim();
 				if (line.matches(".*doi=\".*\".*")) {
 					String newDoi = line.replaceFirst("^.*doi=\"([^\"]*)\".*$", "$1");
 					if (doi != null && !doi.equals(newDoi)) {
-						log("ERROR: Two DOI values found for same entry");
+						logDetail("ERROR. Two DOI values found for same entry");
+						errors++;
 					}
 					doi = newDoi;
 				}
-				if (line.matches(".*<issue printdate=\"[0-9][0-9][0-9][0-9]-.*")) {
-					Short newYear = new Short(line.replaceFirst("^.*<issue printdate=\"([0-9][0-9][0-9][0-9])-.*$", "$1"));
-					if (year != null && !year.equals(newYear)) {
-						log("ERROR: Two year values found for same entry");
+				if (line.matches(".*<issue printdate=\"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\".*")) {
+					String newDate = line.replaceFirst("^.*<issue printdate=\"([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])\".*$", "$1");
+					if (date != null && !date.equals(newDate)) {
+						logDetail("ERROR. Two year values found for same entry");
+						errors++;
 					}
-					year = newYear;
+					date = newDate;
 				}
 				if (line.matches(".*<title>.*</title>.*")) {
 					String title = line.replaceFirst("^.*<title>(.*)</title>.*$", "$1");
 					if (doi == null) {
-						log("ERROR: No DOI found for title: " + title);
+						logDetail("ERROR. No DOI found for title: " + title);
+						errors++;
 						continue;
 					}
-					if (year == null) {
-						log("ERROR: No year found for title: " + title);
+					if (date == null) {
+						logDetail("ERROR. No publishing date found for title: " + title);
+						errors++;
 						continue;
 					}
-					title = PrepareData.normalize(title);
+					title = MemeUtils.normalize(title);
 					if (!titles.containsKey(doi)) {
 						titles.put(doi, title);
-						years.put(doi, year);
+						dates.put(doi, date);
+						// initialize also citations table:
+						citations.put(doi, new ArrayList<String>());
 					} else {
-						log("ERROR: Duplicate DOI: " + doi);
+						logDetail("ERROR. Duplicate DOI: " + doi);
+						errors++;
 					}
 					doi = null;
-					year = null;
+					date = null;
 				}
 			}
-			br.close();
+			r.close();
+			log("Number of errors: " + errors);
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
+	}
+
+	private void processAbstractDir() throws IOException {
+		log("Reading abstracts...");
+		File abstractDir = new File(rawDataPath + "/" + abstractFolder);
+		Files.walkFileTree(abstractDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				if (path.toString().endsWith(".txt")) {
+					processAbstractFile(path);
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
 	}
 
 	private void processAbstractFile(Path path) {
@@ -139,15 +189,119 @@ public class PrepareApsData {
 			while ((line = br.readLine()) != null) {
 				text += line.trim() + " ";
 			}
-			abstracts.put(doi, PrepareData.normalize(text));
+			abstracts.put(doi, MemeUtils.normalize(text));
 			br.close();
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
 	}
 
+	private void processCitationFile() throws IOException {
+		log("Reading citations...");
+		File file = new File(rawDataPath + "/" + citationFile);
+		BufferedReader r = new BufferedReader(new FileReader(file));
+		String line;
+		int invalid = 0;
+		int missing = 0;
+		int linecount = 0;
+		while ((line = r.readLine()) != null) {
+			linecount++;
+			if (linecount == 1) continue;  // skip header line
+			line = line.trim();
+			if (line.matches(".*,.*")) {
+				String doi1 = line.replaceFirst("^(.*),.*$", "$1");
+				String doi2 = line.replaceFirst("^.*,(.*)$", "$1");
+				if (!titles.containsKey(doi1)) {
+					logDetail("ERROR. Missing publication: " + doi1);
+					missing++;
+					continue;
+				}
+				if (!titles.containsKey(doi2)) {
+					logDetail("ERROR. Missing publication: " + doi2);
+					missing++;
+					continue;
+				}
+				citations.get(doi1).add(doi2);
+			} else {
+				log("ERROR. Invalid line: " + line);
+				invalid++;
+			}
+		}
+		r.close();
+		log("Invalid lines: " + invalid);
+		log("Missing publications: " + missing);
+	}
+
+	private void writeDataFiles() throws IOException {
+		File fileT = new File(preparedDataPath + "/aps-T.txt");
+		File fileTA = new File(preparedDataPath + "/aps-TA.txt");
+		int noAbstracts = 0;
+		BufferedWriter wT = new BufferedWriter(new FileWriter(fileT));
+		BufferedWriter wTA = new BufferedWriter(new FileWriter(fileTA));
+		for (String doi1 : titles.keySet()) {
+			wT.write(doi1 + SEP + dates.get(doi1) + SEP + titles.get(doi1));
+			String abs = "";
+			if (abstracts.containsKey(doi1)) {
+				abs = abstracts.get(doi1);
+			} else {
+				logDetail("ERROR. Missing abstract: " + doi1);
+				noAbstracts++;
+			}
+			wTA.write(doi1 + SEP + dates.get(doi1) + SEP + titles.get(doi1) + " " + abs);
+			for (String doi2 : citations.get(doi1)) {
+				wT.write(SEP + titles.get(doi2));
+				abs = "";
+				if (abstracts.containsKey(doi2)) abs = abstracts.get(doi2);
+				wTA.write(SEP + titles.get(doi2) + " " + abs);
+			}
+			wT.write("\n");
+			wTA.write("\n");
+		}
+		wT.close();
+		wTA.close();
+		log("No abstracts: " + noAbstracts);
+	}
+
+	private void writeGmlFile() throws IOException {
+		File file = new File(preparedDataPath + "/aps.gml");
+		BufferedWriter w = new BufferedWriter(new FileWriter(file));
+		w.write("graph [\n");
+		w.write("directed 1\n");
+		for (String doi : titles.keySet()) {
+			String year = dates.get(doi).substring(0, 4);
+			String journal = doi.replaceFirst("^10\\.[0-9]+/([^.]+).*$", "$1");
+			String text = titles.get(doi);
+			if (abstracts.containsKey(doi)) text += " " + abstracts.get(doi);
+			text = " " + text + " ";
+			w.write("node [\n");
+			w.write("id \"" + doi + "\"\n");
+			w.write("journal \"" + journal + "\"\n");
+			w.write("year \"" + year + "\"\n");
+			// TODO Make this general:
+			if (text.contains(" quantum ")) w.write("memeQuantum \"y\"\n");
+			if (text.contains(" traffic ")) w.write("memeTraffic \"y\"\n");
+			if (text.contains(" black hole ")) w.write("memeBlackHole \"y\"\n");
+			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
+			w.write("]\n");
+		}
+		for (String doi1 : citations.keySet()) {
+			for (String doi2 : citations.get(doi1)) {
+				w.write("edge [\n");
+				w.write("source \"" + doi1 + "\"\n");
+				w.write("target \"" + doi2 + "\"\n");
+				w.write("]\n");
+			}
+		}
+		w.write("]\n");
+		w.close();
+	}
+
 	private void log(Object text) {
-		s.log(text);
+		MemeUtils.log(logFile, text);
+	}
+
+	void logDetail(Object text) {
+		if (verbose) log(text);
 	}
 
 }

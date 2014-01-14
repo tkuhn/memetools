@@ -1,9 +1,15 @@
 package ch.tkuhn.memetools;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Writer;
+import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +17,8 @@ import java.util.Map;
 public class MemeUtils {
 
 	private MemeUtils() {}  // no instances allowed
+
+	public static final String SEP = "  ";
 
 	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
 		Map<String,Boolean> terms = new HashMap<String,Boolean>();
@@ -65,6 +73,26 @@ public class MemeUtils {
 			}
 		}
 		writer.write("\n");
+	}
+
+	public static String normalize(String text) {
+		text = " " + text.toLowerCase() + " ";
+		text = text.replaceAll("[.,:;] ", " ");
+		text = text.replaceAll("[^a-z0-9\\-()\\[\\]{}_^.,:;/\\'|+]+", " ");
+		text = text.replaceAll("[^a-z0-9\\-()\\[\\]{}_^.,:;/\\'|+]+", " ");
+		return text.trim();
+	}
+
+	public static void log(File logFile, Object text) {
+		try {
+		    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(logFile, true)));
+		    String timestamp = new Timestamp(new Date().getTime()).toString();
+		    timestamp = timestamp.replaceFirst("\\.[0-9]*$", "");
+		    out.println(timestamp + " " + text);
+		    out.close();
+		} catch (IOException ex) {
+		    ex.printStackTrace();
+		}
 	}
 
 }
