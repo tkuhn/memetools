@@ -137,6 +137,7 @@ public class CalculateMemeScores {
 			log(ex);
 			System.exit(1);
 		}
+		log("Finished");
 	}
 
 	private String getOutputFileName() {

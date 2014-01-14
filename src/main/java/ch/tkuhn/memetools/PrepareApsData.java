@@ -67,6 +67,7 @@ public class PrepareApsData {
 		} catch (IOException ex) {
 			log(ex);
 		}
+		log("Finished");
 	}
 
 	private void init() {

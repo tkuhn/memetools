@@ -72,30 +72,46 @@ public class DataEntry {
 	}
 
 	public void recordTerms(Map<String,Integer> map, Map<String,Integer> stickingMap, Map<String,Integer> sparkingMap, Object filter) {
-		Map<String,Boolean> processed = new HashMap<String,Boolean>();
-		String allCited = " ";
-		for (String c : citedText) allCited += "  " + c;
+		Map<String,Byte> processed = new HashMap<String,Byte>();
+		String allCited = "";
+		for (String c : citedText) allCited += "  " + c.trim();
 		allCited += " ";
 		String[] tokens = text.trim().split(" ");
 		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
+			String pre = "   ";
+			if (p1 > 0) pre = " " + tokens[p1-1];
 			String term = " ";
 			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
 				term += tokens[p2] + " ";
 				String t = term.trim();
+				String post = "   ";
+				if (p2 < tokens.length-1) post = tokens[p2+1] + " ";
 				if (ignoreTerm(t, filter)) continue;
+				if (processed.containsKey(t) && processed.get(t) == 2) continue;
+				if (stickingMap != null && allCited.contains(term)) {
+					int c = countOccurrences(allCited, term);
+					if (countOccurrences(allCited, pre + term) < c && countOccurrences(allCited, term + post) < c) {
+						increaseMapEntry(stickingMap, t);
+						processed.put(t, (byte) 2);
+					}
+				}
 				if (processed.containsKey(t)) continue;
-				processed.put(t, true);
+				processed.put(t, (byte) 1);
 				if (map != null) {
 					increaseMapEntry(map, t);
-				}
-				if (stickingMap != null && allCited.contains(term)) {
-					increaseMapEntry(stickingMap, t);
 				}
 				if (sparkingMap != null && !allCited.contains(term)) {
 					increaseMapEntry(sparkingMap, t);
 				}
 			}
 		}
+	}
+
+	private int countOccurrences(String string, String subString) {
+		int c = 0;
+		int p = -1;
+		while ((p = string.indexOf(subString, p+1)) > -1) c++;
+		return c;
 	}
 
 	public void recordCitedTerms(Map<String,Integer> map, Object filter) {

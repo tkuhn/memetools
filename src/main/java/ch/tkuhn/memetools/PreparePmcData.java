@@ -31,8 +31,8 @@ public class PreparePmcData {
 		obj.run();
 	}
 
-	private static String pmcListFile = "PMC-ids.csv";
-	private static String pmcXmlPath = "pmcoa-xml";
+//	private static String pmcListFile = "PMC-ids.csv";
+//	private static String pmcXmlPath = "pmcoa-xml";
 
 	public PreparePmcData() {
 	}
