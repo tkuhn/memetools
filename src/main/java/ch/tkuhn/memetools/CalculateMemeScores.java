@@ -56,7 +56,6 @@ public class CalculateMemeScores {
 		obj.run();
 	}
 
-	private int nt;
 	private Map<String,Integer> nm;
 
 	private int et;
@@ -68,7 +67,6 @@ public class CalculateMemeScores {
 	}
 
 	public void run() {
-		nt = 0;
 		nm = new HashMap<String,Integer>();
 		et = 0;
 		emm = new HashMap<String,Integer>();
@@ -82,27 +80,15 @@ public class CalculateMemeScores {
 			while ((line = reader.readLine()) != null) {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				nt = nt + 1;
-				Map<String,Boolean> citingTerms = getTerms(d.getText());
-				Map<String,Boolean> citedTerms = new HashMap<>();
-				for (String s : d.getCitedText()) {
-					collectTerms(s, citedTerms);
-				}
-				for (String term : citingTerms.keySet()) {
-					if (!citedTerms.containsKey(term)) continue;
-					if (emm.containsKey(term)) {
-						emm.put(term, emm.get(term) + 1);
-					} else {
-						emm.put(term, 1);
-					}
-				}
+				et++;
+				d.recordTerms(null, emm, null, null);
 			}
 			reader.close();
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			System.exit(1);
 		}
-		System.out.println("Total number of documents: " + nt);
+		System.out.println("Total number of documents: " + et);
 		System.out.println("Number of unique terms with meme score > 0: " + emm.size());
 
 		for (String w : emm.keySet()) {
@@ -118,23 +104,8 @@ public class CalculateMemeScores {
 			while ((line = reader.readLine()) != null) {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				Map<String,Boolean> citingTerms = getFilteredTerms(d.getText());
-				Map<String,Boolean> citedTerms = new HashMap<>();
-				for (String s : d.getCitedText()) {
-					collectFilteredTerms(s, citedTerms);
-				}
-				et++;
-				for (String term : citedTerms.keySet()) {
-					if (!citingTerms.containsKey(term)) {
-						emx.put(term, emx.get(term) + 1);
-					}
-				}
-				for (String term : citingTerms.keySet()) {
-					nm.put(term, nm.get(term) + 1);
-					if (!citedTerms.containsKey(term)) {
-						exm.put(term, exm.get(term) + 1);
-					}
-				}
+				d.recordCitedTerms(emx, emm);
+				d.recordTerms(nm, null, exm, emm);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -154,7 +125,7 @@ public class CalculateMemeScores {
 				double spark = (double) (exm.get(term) + n) / (ex + n);
 				double ps = stick / spark;
 				int absFq = nm.get(term);
-				double relFq = (double) absFq / nt;
+				double relFq = (double) absFq / et;
 				double ms = ps * relFq;
 				MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em,
 						stick, exm.get(term), ex, spark, ps });
@@ -164,22 +135,6 @@ public class CalculateMemeScores {
 			ex.printStackTrace();
 			System.exit(1);
 		}
-	}
-
-	private Map<String,Boolean> getTerms(String text) {
-		return MemeUtils.getTerms(text, grams);
-	}
-
-	private void collectTerms(String text, Map<String,Boolean> terms) {
-		MemeUtils.collectTerms(text, grams, terms);
-	}
-
-	private Map<String,Boolean> getFilteredTerms(String text) {
-		return MemeUtils.getTerms(text, grams, emm);
-	}
-
-	private void collectFilteredTerms(String text, Map<String,Boolean> terms) {
-		MemeUtils.collectTerms(text, grams, emm, terms);
 	}
 
 	private File getOutputFile(File inputFile) {

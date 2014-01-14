@@ -18,11 +18,11 @@ public class MemeUtils {
 
 	private MemeUtils() {}  // no instances allowed
 
-	public static void collectTerms(String text, int grams, Map<String,?> filter, Map<String,Boolean> terms) {
+	public static void collectTerms(String text, int grams, Object filter, Map<String,Boolean> terms) {
 		String[] onegrams = text.trim().split("\\s+");
 		List<String> previous = new ArrayList<String>();
 		for (String t : onegrams) {
-			if (filter == null || filter.containsKey(t)) {
+			if (!ignoreTerm(t, filter)) {
 				terms.put(t, true);
 			}
 			for (int x = 1; x < grams; x++) {
@@ -31,7 +31,7 @@ public class MemeUtils {
 					for (int y = 0; y < x; y++) {
 						term = previous.get(y) + " " + term;
 					}
-					if (filter == null || filter.containsKey(term)) {
+					if (!ignoreTerm(term, filter)) {
 						terms.put(term, true);
 					}
 				}
@@ -47,7 +47,7 @@ public class MemeUtils {
 		collectTerms(text, grams, null, terms);
 	}
 
-	public static Map<String,Boolean> getTerms(String text, int grams, Map<String,?> filter) {
+	public static Map<String,Boolean> getTerms(String text, int grams, Object filter) {
 		Map<String,Boolean> terms = new HashMap<String,Boolean>();
 		collectTerms(text, grams, filter, terms);
 		return terms;
@@ -98,6 +98,19 @@ public class MemeUtils {
 		    out.close();
 		} catch (IOException ex) {
 		    ex.printStackTrace();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean ignoreTerm(String term, Object filter) {
+		if (filter == null) {
+			return false;
+		} else if (filter instanceof Map) {
+			return !((Map<String,?>) filter).containsKey(term);
+		} else if (filter instanceof String) {
+			return !((String) filter).contains(" " + term + " ");
+		} else {
+			throw new RuntimeException("Unrecognized filter: " + filter);
 		}
 	}
 
