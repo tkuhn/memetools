@@ -18,8 +18,6 @@ public class MemeUtils {
 
 	private MemeUtils() {}  // no instances allowed
 
-	public static final String SEP = "  ";
-
 	public static void collectTerms(String text, int grams, Map<String,?> filter, Map<String,Boolean> terms) {
 		String[] onegrams = text.trim().split("\\s+");
 		List<String> previous = new ArrayList<String>();

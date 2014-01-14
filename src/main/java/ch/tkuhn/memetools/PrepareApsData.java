@@ -23,8 +23,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-import static ch.tkuhn.memetools.MemeUtils.SEP;
-
 public class PrepareApsData {
 
 	@Parameter(names = "-r", description = "Path to read raw data")
@@ -239,23 +237,19 @@ public class PrepareApsData {
 		BufferedWriter wT = new BufferedWriter(new FileWriter(fileT));
 		BufferedWriter wTA = new BufferedWriter(new FileWriter(fileTA));
 		for (String doi1 : titles.keySet()) {
-			wT.write(doi1 + SEP + dates.get(doi1) + SEP + titles.get(doi1));
-			String abs = "";
-			if (abstracts.containsKey(doi1)) {
-				abs = abstracts.get(doi1);
-			} else {
-				logDetail("ERROR. Missing abstract: " + doi1);
-				noAbstracts++;
-			}
-			wTA.write(doi1 + SEP + dates.get(doi1) + SEP + titles.get(doi1) + " " + abs);
+			String text = titles.get(doi1);
+			String date = dates.get(doi1);
+			DataEntry eT = new DataEntry(doi1, date, text);
+			if (abstracts.containsKey(doi1)) text += " " + abstracts.get(doi1);
+			DataEntry eTA = new DataEntry(doi1, date, text);
 			for (String doi2 : citations.get(doi1)) {
-				wT.write(SEP + titles.get(doi2));
-				abs = "";
-				if (abstracts.containsKey(doi2)) abs = abstracts.get(doi2);
-				wTA.write(SEP + titles.get(doi2) + " " + abs);
+				text = titles.get(doi2);
+				eT.addCitedText(text);
+				if (abstracts.containsKey(doi2)) text += " " + abstracts.get(doi2);
+				eTA.addCitedText(text);
 			}
-			wT.write("\n");
-			wTA.write("\n");
+			wT.write(eT.getLine() + "\n");
+			wTA.write(eTA.getLine() + "\n");
 		}
 		wT.close();
 		wTA.close();

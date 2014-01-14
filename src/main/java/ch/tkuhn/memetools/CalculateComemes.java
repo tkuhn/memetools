@@ -96,17 +96,12 @@ public class CalculateComemes {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = line.split("  ");
-				if (splitline.length < 3) {
-					errors = errors + 1;
-					continue;
-				}
-				String citing = splitline[2];
+				DataEntry d = new DataEntry(line);
 				nxx = nxx + 1;
-				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
+				Map<String,Boolean> citingTerms = getFilteredTerms(d.getText());
 				Map<String,Boolean> citedTerms = new HashMap<>();
-				for (int i = 3 ; i < splitline.length ; i++) {
-					collectFilteredTerms(splitline[i], citedTerms);
+				for (String s : d.getCitedText()) {
+					collectFilteredTerms(s, citedTerms);
 				}
 				for (String meme1 : memes.keySet()) {
 					boolean meme1Stick = false;

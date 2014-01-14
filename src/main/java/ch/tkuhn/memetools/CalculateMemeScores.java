@@ -80,15 +80,13 @@ public class CalculateMemeScores {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = line.split("  ");
-				int y = Integer.parseInt(splitline[1].substring(0, 4));
-				if (!considerYear(y)) continue;
-				String citing = splitline[2];
+				DataEntry d = new DataEntry(line);
+				if (!considerYear(d.getYear())) continue;
 				nt = nt + 1;
-				Map<String,Boolean> citingTerms = getTerms(citing);
+				Map<String,Boolean> citingTerms = getTerms(d.getText());
 				Map<String,Boolean> citedTerms = new HashMap<>();
-				for (int i = 3 ; i < splitline.length ; i++) {
-					collectTerms(splitline[i], citedTerms);
+				for (String s : d.getCitedText()) {
+					collectTerms(s, citedTerms);
 				}
 				for (String term : citingTerms.keySet()) {
 					if (!citedTerms.containsKey(term)) continue;
@@ -118,18 +116,12 @@ public class CalculateMemeScores {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] splitline = line.split("  ");
-				if (splitline.length < 3) {
-					errors++;
-					continue;
-				}
-				int y = Integer.parseInt(splitline[1].substring(0, 4));
-				if (!considerYear(y)) continue;
-				String citing = splitline[2];
-				Map<String,Boolean> citingTerms = getFilteredTerms(citing);
+				DataEntry d = new DataEntry(line);
+				if (!considerYear(d.getYear())) continue;
+				Map<String,Boolean> citingTerms = getFilteredTerms(d.getText());
 				Map<String,Boolean> citedTerms = new HashMap<>();
-				for (int i = 3 ; i < splitline.length ; i++) {
-					collectFilteredTerms(splitline[i], citedTerms);
+				for (String s : d.getCitedText()) {
+					collectFilteredTerms(s, citedTerms);
 				}
 				et++;
 				for (String term : citedTerms.keySet()) {
