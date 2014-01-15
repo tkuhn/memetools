@@ -68,7 +68,7 @@ public class CalculateMemeScores {
 
 	public void run() {
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
-		if (logFile.exists()) logFile.delete();
+		log("==========");
 
 		nm = new HashMap<String,Integer>();
 		et = 0;

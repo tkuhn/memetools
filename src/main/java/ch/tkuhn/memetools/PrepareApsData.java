@@ -72,8 +72,7 @@ public class PrepareApsData {
 
 	private void init() {
 		logFile = new File(MemeUtils.getLogDir(), "prepare-aps.log");
-		if (logFile.exists()) logFile.delete();
-
+		log("==========");
 		log("Starting...");
 
 		titles = new HashMap<String,String>();
