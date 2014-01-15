@@ -14,6 +14,7 @@ Directory with raw input data:
     data/aps-dataset-abstracts/...
     data/PMC-ids.csv
     data/pmcoa-xml/...
+    data/dbpedia
 
 Directory with prepared input data:
 
