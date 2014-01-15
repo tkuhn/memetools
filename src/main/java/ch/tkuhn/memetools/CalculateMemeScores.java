@@ -83,7 +83,7 @@ public class CalculateMemeScores {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
 				et++;
-				d.recordTerms(null, emm, null, null);
+				recordTerms(d, null, emm, null, null);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -106,8 +106,8 @@ public class CalculateMemeScores {
 			while ((line = reader.readLine()) != null) {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				d.recordCitedTerms(em, emm);
-				d.recordTerms(nm, null, exm, emm);
+				recordCitedTerms(d, em, emm);
+				recordTerms(d, nm, null, exm, emm);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -159,6 +159,88 @@ public class CalculateMemeScores {
 		if (yearStart != null && y < yearStart) return false;
 		if (yearEnd != null && y > yearEnd) return false;
 		return true;
+	}
+
+	private void recordTerms(DataEntry d, Map<String,Integer> map, Map<String,Integer> stickingMap, Map<String,Integer> sparkingMap, Object filter) {
+		Map<String,Byte> processed = new HashMap<String,Byte>();
+		String allCited = "";
+		for (String c : d.getCitedText()) allCited += "  " + c.trim();
+		allCited += " ";
+		String[] tokens = d.getText().trim().split(" ");
+		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
+			String pre = "   ";
+			if (p1 > 0) pre = " " + tokens[p1-1];
+			String term = " ";
+			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
+				term += tokens[p2] + " ";
+				String t = term.trim();
+				String post = "   ";
+				if (p2 < tokens.length-1) post = tokens[p2+1] + " ";
+				if (ignoreTerm(t, filter)) continue;
+				if (processed.containsKey(t) && processed.get(t) == 2) continue;
+				if (stickingMap != null && allCited.contains(term)) {
+					int c = countOccurrences(allCited, term);
+					if (countOccurrences(allCited, pre + term) < c && countOccurrences(allCited, term + post) < c) {
+						increaseMapEntry(stickingMap, t);
+						processed.put(t, (byte) 2);
+					}
+				}
+				if (processed.containsKey(t)) continue;
+				processed.put(t, (byte) 1);
+				if (map != null) {
+					increaseMapEntry(map, t);
+				}
+				if (sparkingMap != null && !allCited.contains(term)) {
+					increaseMapEntry(sparkingMap, t);
+				}
+			}
+		}
+	}
+
+	private int countOccurrences(String string, String subString) {
+		int c = 0;
+		int p = -1;
+		while ((p = string.indexOf(subString, p+1)) > -1) c++;
+		return c;
+	}
+
+	private void recordCitedTerms(DataEntry d, Map<String,Integer> map, Object filter) {
+		Map<String,Boolean> processed = new HashMap<String,Boolean>();
+		for (String cited : d.getCitedText()) {
+			String[] tokens = cited.trim().split(" ");
+			for (int p1 = 0 ; p1 < tokens.length ; p1++) {
+				String term = " ";
+				for (int p2 = p1 ; p2 < tokens.length ; p2++) {
+					term += tokens[p2] + " ";
+					String t = term.trim();
+					if (ignoreTerm(t, filter)) continue;
+					if (processed.containsKey(t)) continue;
+					processed.put(t, true);
+					increaseMapEntry(map, t);
+				}
+			}
+		}
+	}
+
+	private static void increaseMapEntry(Map<String,Integer> map, String key) {
+		if (map.containsKey(key)) {
+			map.put(key, map.get(key) + 1);
+		} else {
+			map.put(key, 1);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static boolean ignoreTerm(String term, Object filter) {
+		if (filter == null) {
+			return false;
+		} else if (filter instanceof Map) {
+			return !((Map<String,?>) filter).containsKey(term);
+		} else if (filter instanceof String) {
+			return !((String) filter).contains(" " + term + " ");
+		} else {
+			throw new RuntimeException("Unrecognized filter: " + filter);
+		}
 	}
 
 	private void log(Object obj) {
