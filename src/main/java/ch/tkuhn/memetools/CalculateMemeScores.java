@@ -80,8 +80,11 @@ public class CalculateMemeScores {
 		try {
 			log("Extracting terms from input file: " + inputFile);
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			int progress = 0;
 			String line;
 			while ((line = reader.readLine()) != null) {
+				progress++;
+				logProgress(progress);
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
 				et++;
@@ -104,8 +107,11 @@ public class CalculateMemeScores {
 		try {
 			log("Counting terms...");
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			int progress = 0;
 			String line;
 			while ((line = reader.readLine()) != null) {
+				progress++;
+				logProgress(progress);
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
 				recordCitedTerms(d);
@@ -123,7 +129,10 @@ public class CalculateMemeScores {
 			Writer w = new BufferedWriter(new FileWriter(csvFile));
 			MemeUtils.writeCsvLine(w, new Object[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
 					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
+			int progress = 0;
 			for (String term : nm.keySet()) {
+				progress++;
+				logProgress(progress);
 				int ex = et - em.get(term);
 				double stick = (double) emm.get(term) / (em.get(term) + n);
 				double spark = (double) (exm.get(term) + n) / (ex + n);
@@ -249,6 +258,10 @@ public class CalculateMemeScores {
 		} else {
 			map.put(key, 1);
 		}
+	}
+
+	private void logProgress(int p) {
+		if (p % 100000 == 0) log(p + "...");
 	}
 
 	private void log(Object obj) {
