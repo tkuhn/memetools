@@ -59,6 +59,7 @@ public class CalculateMemeScores {
 
 	private int et;
 	private Map<String,Integer> emm;
+	private Map<String,Boolean> emmp;
 	private Map<String,Integer> em;
 	private Map<String,Integer> exm;
 
@@ -72,6 +73,7 @@ public class CalculateMemeScores {
 		nm = new HashMap<String,Integer>();
 		et = 0;
 		emm = new HashMap<String,Integer>();
+		emmp = new HashMap<String,Boolean>();
 		em = new HashMap<String,Integer>();
 		exm = new HashMap<String,Integer>();
 
@@ -83,7 +85,7 @@ public class CalculateMemeScores {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
 				et++;
-				recordStickingTerms(d, emm);
+				recordStickingTerms(d);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -106,8 +108,8 @@ public class CalculateMemeScores {
 			while ((line = reader.readLine()) != null) {
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				recordCitedTerms(d, em, emm);
-				recordTerms(d, nm, exm, emm);
+				recordCitedTerms(d);
+				recordTerms(d);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -161,7 +163,7 @@ public class CalculateMemeScores {
 		return true;
 	}
 
-	private void recordStickingTerms(DataEntry d, Map<String,Integer> stickingMap) {
+	private void recordStickingTerms(DataEntry d) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String allCited = "";
 		for (String c : d.getCitedText()) allCited += "  " + c.trim();
@@ -177,18 +179,22 @@ public class CalculateMemeScores {
 				String post = "   ";
 				if (p2 < tokens.length-1) post = tokens[p2+1] + " ";
 				if (processed.containsKey(t)) continue;
-				if (stickingMap != null && allCited.contains(term)) {
+				if (allCited.contains(term)) {
 					int c = countOccurrences(allCited, term);
 					if (countOccurrences(allCited, pre + term) < c && countOccurrences(allCited, term + post) < c) {
-						increaseMapEntry(stickingMap, t);
+						increaseMapEntry(emm, t);
 						processed.put(t, true);
+					} else {
+						emmp.put(t, true);
 					}
+				} else {
+					break;
 				}
 			}
 		}
 	}
 
-	private void recordTerms(DataEntry d, Map<String,Integer> map, Map<String,Integer> sparkingMap, Map<String,?> filter) {
+	private void recordTerms(DataEntry d) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String allCited = "";
 		for (String c : d.getCitedText()) allCited += "  " + c.trim();
@@ -199,14 +205,13 @@ public class CalculateMemeScores {
 			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
 				term += tokens[p2] + " ";
 				String t = term.trim();
-				if (!filter.containsKey(t)) continue;
+				if (!emm.containsKey(t) && !emmp.containsKey(t)) break;
+				if (!emm.containsKey(t)) continue;
 				if (processed.containsKey(t)) continue;
 				processed.put(t, true);
-				if (map != null) {
-					increaseMapEntry(map, t);
-				}
-				if (sparkingMap != null && !allCited.contains(term)) {
-					increaseMapEntry(sparkingMap, t);
+				increaseMapEntry(nm, t);
+				if (!allCited.contains(term)) {
+					increaseMapEntry(exm, t);
 				}
 			}
 		}
@@ -219,7 +224,7 @@ public class CalculateMemeScores {
 		return c;
 	}
 
-	private void recordCitedTerms(DataEntry d, Map<String,Integer> map, Map<String,?> filter) {
+	private void recordCitedTerms(DataEntry d) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		for (String cited : d.getCitedText()) {
 			String[] tokens = cited.trim().split(" ");
@@ -228,10 +233,11 @@ public class CalculateMemeScores {
 				for (int p2 = p1 ; p2 < tokens.length ; p2++) {
 					term += tokens[p2] + " ";
 					String t = term.trim();
-					if (!filter.containsKey(t)) continue;
+					if (!emm.containsKey(t) && !emmp.containsKey(t)) break;
+					if (!emm.containsKey(t)) continue;
 					if (processed.containsKey(t)) continue;
 					processed.put(t, true);
-					increaseMapEntry(map, t);
+					increaseMapEntry(em, t);
 				}
 			}
 		}
