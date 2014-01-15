@@ -8,11 +8,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class MemeUtils {
 
@@ -60,45 +56,6 @@ public class MemeUtils {
 		return outputDataDir;
 	}
 
-	public static void collectTerms(String text, int grams, Object filter, Map<String,Boolean> terms) {
-		String[] onegrams = text.trim().split("\\s+");
-		List<String> previous = new ArrayList<String>();
-		for (String t : onegrams) {
-			if (!ignoreTerm(t, filter)) {
-				terms.put(t, true);
-			}
-			for (int x = 1; x < grams; x++) {
-				if (previous.size() > x-1) {
-					String term = t;
-					for (int y = 0; y < x; y++) {
-						term = previous.get(y) + " " + term;
-					}
-					if (!ignoreTerm(term, filter)) {
-						terms.put(term, true);
-					}
-				}
-			}
-			previous.add(0, t);
-			while (previous.size() > grams-1) {
-				previous.remove(previous.size()-1);
-			}
-		}
-	}
-
-	public static void collectTerms(String text, int grams, Map<String,Boolean> terms) {
-		collectTerms(text, grams, null, terms);
-	}
-
-	public static Map<String,Boolean> getTerms(String text, int grams, Object filter) {
-		Map<String,Boolean> terms = new HashMap<String,Boolean>();
-		collectTerms(text, grams, filter, terms);
-		return terms;
-	}
-
-	public static Map<String,Boolean> getTerms(String text, int grams) {
-		return getTerms(text, grams, null);
-	}
-
 	private static DecimalFormat df = new DecimalFormat("0.##########");
 
 	public static String formatNumber(Number n) {
@@ -144,19 +101,6 @@ public class MemeUtils {
 		    out.close();
 		} catch (IOException ex) {
 		    ex.printStackTrace();
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static boolean ignoreTerm(String term, Object filter) {
-		if (filter == null) {
-			return false;
-		} else if (filter instanceof Map) {
-			return !((Map<String,?>) filter).containsKey(term);
-		} else if (filter instanceof String) {
-			return !((String) filter).contains(" " + term + " ");
-		} else {
-			throw new RuntimeException("Unrecognized filter: " + filter);
 		}
 	}
 

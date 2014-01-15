@@ -180,11 +180,34 @@ public class CalculateComemes {
 	}
 
 	private Map<String,Boolean> getFilteredTerms(String text) {
-		return MemeUtils.getTerms(text, grams, memes);
+		Map<String,Boolean> terms = new HashMap<String,Boolean>();
+		collectFilteredTerms(text, terms);
+		return terms;
 	}
 
 	private void collectFilteredTerms(String text, Map<String,Boolean> terms) {
-		MemeUtils.collectTerms(text, grams, memes, terms);
+		String[] onegrams = text.trim().split("\\s+");
+		List<String> previous = new ArrayList<String>();
+		for (String t : onegrams) {
+			if (memes.containsKey(t)) {
+				terms.put(t, true);
+			}
+			for (int x = 1; x < grams; x++) {
+				if (previous.size() > x-1) {
+					String term = t;
+					for (int y = 0; y < x; y++) {
+						term = previous.get(y) + " " + term;
+					}
+					if (memes.containsKey(term)) {
+						terms.put(term, true);
+					}
+				}
+			}
+			previous.add(0, t);
+			while (previous.size() > grams-1) {
+				previous.remove(previous.size()-1);
+			}
+		}
 	}
 
 	private File getOutputFile(File inputFile, String ext) {
