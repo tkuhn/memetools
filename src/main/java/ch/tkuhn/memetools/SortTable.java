@@ -70,13 +70,15 @@ public class SortTable {
 	public void run() throws IOException {
 		init();
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		List<String> header = MemeUtils.readCsvLine(reader);
+		String headerLine = reader.readLine();
+		List<String> header = MemeUtils.readCsvLine(headerLine);
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
 		} else {
 			col = header.indexOf(colIndexOrName);
 		}
+		content.add(headerLine);
 		String line;
 		while ((line = reader.readLine()) != null) {
 			List<String> entries = MemeUtils.readCsvLine(line);
@@ -98,6 +100,7 @@ public class SortTable {
 			}
 		});
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		writer.write(content.get(0) + "\n");
 		for (Pair<Integer,Double> p : sortList) {
 			writer.write(content.get(p.getLeft()) + "\n");
 		}
