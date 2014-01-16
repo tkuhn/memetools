@@ -93,9 +93,9 @@ public class SortTable {
 			@Override
 			public int compare(Pair<Integer,Double> o1, Pair<Integer,Double> o2) {
 				if (reversed) {
-					return (int) (o2.getRight() - o1.getRight());
+					return Double.compare(o2.getRight(), o1.getRight());
 				} else {
-					return (int) (o1.getRight() - o2.getRight());
+					return Double.compare(o1.getRight(), o2.getRight());
 				}
 			}
 		});
