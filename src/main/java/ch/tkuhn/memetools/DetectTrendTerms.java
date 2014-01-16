@@ -147,7 +147,8 @@ public class DetectTrendTerms {
 				if (!absFreqCh.containsKey(t) || absFreqCh.get(t) < a) {
 					absFreqCh.put(t, a);
 				}
-				double r = rtc / rlc;
+				double r = 0;
+				if (rlc != 0) r = rtc / rlc;
 				if (!relFreqCh.containsKey(t) || relFreqCh.get(t) < r) {
 					relFreqCh.put(t, r);
 				}

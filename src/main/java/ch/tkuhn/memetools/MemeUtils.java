@@ -93,7 +93,7 @@ public class MemeUtils {
 			}
 			writer.write(s);
 		} else {
-			writer.write(df.format(o));
+			writer.write(o + "");
 		}
 	}
 
