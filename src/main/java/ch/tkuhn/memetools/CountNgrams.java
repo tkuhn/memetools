@@ -144,6 +144,7 @@ public class CountNgrams {
 	}
 
 	private void recordNgrams(DataEntry d) {
+		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String[] tokens = d.getText().trim().split(" ");
 		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
 			String term = "";
@@ -151,6 +152,8 @@ public class CountNgrams {
 				if (p2 - p1 > g - 1) break;
 				term += " " + tokens[p2];
 				term = term.trim();
+				if (processed.containsKey(term)) continue;
+				processed.put(term, true);
 				if (ngrams.containsKey(term)) {
 					ngrams.put(term, ngrams.get(term) + 1);
 				} else {
