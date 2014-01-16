@@ -1,5 +1,6 @@
 package ch.tkuhn.memetools;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -8,7 +9,9 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class MemeUtils {
 
@@ -67,17 +70,54 @@ public class MemeUtils {
 		for (Object o : line) {
 			if (!first) writer.write(",");
 			first = false;
-			if (o instanceof String) {
-				String s = (String) o;
-				if (s.matches(".*[,\"].*")) {
-					s = "\"" + s.replaceAll("\"", "\\\"") + "\"";
-				}
-				writer.write(s);
-			} else {
-				writer.write(df.format(o));
-			}
+			writeCsvEntry(o, writer);
 		}
 		writer.write("\n");
+	}
+
+	public static void writeCsvLine(Writer writer, Iterable<?> line) throws IOException {
+		boolean first = true;
+		for (Object o : line) {
+			if (!first) writer.write(",");
+			first = false;
+			writeCsvEntry(o, writer);
+		}
+		writer.write("\n");
+	}
+
+	private static void writeCsvEntry(Object o, Writer writer) throws IOException {
+		if (o instanceof String) {
+			String s = (String) o;
+			if (s.matches(".*[,\"].*")) {
+				s = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+			}
+			writer.write(s);
+		} else {
+			writer.write(df.format(o));
+		}
+	}
+
+	public static List<String> readCsvLine(BufferedReader reader) throws IOException {
+		if (!reader.ready()) return null;
+		String line = reader.readLine();
+		List<String> entries = new ArrayList<String>();
+		while (!line.isEmpty()) {
+			if (line.matches("\"([^\"\\\\]|\\\\\"|\\\\\\\\)*\"(,.*)?")) {
+				String e = line.replaceFirst("^\"(([^\"\\\\]|\\\\\"|\\\\\\\\)*)\"(,.*)?$", "$1");
+				line = line.replaceFirst("^\"([^\"\\\\]|\\\\\"|\\\\\\\\)*\"((,.*)?)$", "$2");
+				if (line.startsWith(",")) line = line.substring(1);
+				e = e.replace("\\\"", "\"").replace("\\\\", "\\");
+				entries.add(e);
+			} else if (line.contains(",")) {
+				String e = line.substring(0, line.indexOf(','));
+				line = line.substring(line.indexOf(',') + 1);
+				entries.add(e);
+			} else {
+				entries.add(line);
+				line = "";
+			}
+		}
+		return entries;
 	}
 
 	public static String normalize(String text) {
