@@ -99,10 +99,10 @@ public class CountNgrams {
 			Writer w = new BufferedWriter(new FileWriter(csvFile));
 			MemeUtils.writeCsvLine(w, new Object[] {"COUNT", "TERM"});
 			for (String term : ngrams.keySet()) {
-				n++;
 				logProgress(n);
 				int c = ngrams.get(term);
 				if (c >= t) {
+					n++;
 					MemeUtils.writeCsvLine(w, new Object[] { c, term });
 				}
 			}
