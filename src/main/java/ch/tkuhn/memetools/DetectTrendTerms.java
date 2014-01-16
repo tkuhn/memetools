@@ -137,13 +137,17 @@ public class DetectTrendTerms {
 	private void finishPeriod() {
 		if (lastCount != null) {
 			for (String t : terms.keySet()) {
-				double lc = (double) lastCount.get(t) / docsInPeriodCount;
-				double tc = (double) thisCount.get(t) / docsInPeriodCount;
-				double a = tc - lc;
+				double lc = 0;
+				if (lastCount.containsKey(t)) lc = lastCount.get(t);
+				double rlc = lc / docsInPeriodCount;
+				double tc = 0;
+				if (thisCount.containsKey(t)) tc = thisCount.get(t);
+				double rtc = (double) tc / docsInPeriodCount;
+				double a = rtc - rlc;
 				if (!absFreqCh.containsKey(t) || absFreqCh.get(t) < a) {
 					absFreqCh.put(t, a);
 				}
-				double r = tc / lc;
+				double r = rtc / rlc;
 				if (!relFreqCh.containsKey(t) || relFreqCh.get(t) < r) {
 					relFreqCh.put(t, r);
 				}
