@@ -28,8 +28,8 @@ public class DataEntry {
 		if (splitline.length < 3) {
 			throw new RuntimeException("Invalid line: " + line);
 		}
-		doi = splitline[0];
-		date = splitline[1];
+		date = splitline[0];
+		doi = splitline[1];
 		text = splitline[2];
 		citedText = new ArrayList<String>();
 		for (int i = 3 ; i < splitline.length ; i++) {
@@ -62,7 +62,7 @@ public class DataEntry {
 	}
 
 	public String getLine() {
-		String line = doi + SEP + date + SEP + text;
+		String line = date + SEP + doi + SEP + text;
 		for (String c : citedText) {
 			line += SEP + c;
 		}
