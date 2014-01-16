@@ -25,11 +25,17 @@ public class LookupTerms {
 	@Parameter(names = "-d", description = "Dictionary file", required = true)
 	private File dictFile;
 
+	@Parameter(names = "-o", description = "Output file")
+	private File outputFile;
+
 	@Parameter(names = "-c", description = "Index or name of column to match")
 	private String colIndexOrName = "TERM";
 
 	@Parameter(names = "-n", description = "Name of the new column")
 	private String newColName = "LOOKUP";
+
+	@Parameter(names = "-s", description = "Make matching case sensitive")
+	private boolean caseSensitive = false;
 
 	public static final void main(String[] args) {
 		LookupTerms obj = new LookupTerms();
@@ -53,7 +59,6 @@ public class LookupTerms {
 		}
 	}
 
-	private File outputFile;
 	private Map<String,Boolean> dictTerms;
 
 	public LookupTerms() {
@@ -86,7 +91,9 @@ public class LookupTerms {
 	}
 
 	private void init() {
-		outputFile = new File(inputFile.getName().replaceAll("\\..*$", "") + "-dict.csv");
+		if (outputFile == null) {
+			outputFile = new File(inputFile.getPath().replaceAll("\\..*$", "") + "-dict.csv");
+		}
 		dictTerms = new HashMap<String,Boolean>();
 	}
 
@@ -94,6 +101,7 @@ public class LookupTerms {
 		BufferedReader reader = new BufferedReader(new FileReader(dictFile), 64*1024);
 		String line;
 		while ((line = reader.readLine()) != null) {
+			if (!caseSensitive) line = line.toLowerCase();
 			dictTerms.put(line, true);
 		}
 		reader.close();
