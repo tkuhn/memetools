@@ -100,6 +100,10 @@ public class MemeUtils {
 	public static List<String> readCsvLine(BufferedReader reader) throws IOException {
 		if (!reader.ready()) return null;
 		String line = reader.readLine();
+		return readCsvLine(line);
+	}
+
+	public static List<String> readCsvLine(String line) throws IOException {
 		List<String> entries = new ArrayList<String>();
 		while (!line.isEmpty()) {
 			if (line.matches("\"([^\"\\\\]|\\\\\"|\\\\\\\\)*\"(,.*)?")) {
