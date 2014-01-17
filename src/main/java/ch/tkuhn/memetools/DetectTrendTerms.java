@@ -161,7 +161,8 @@ public class DetectTrendTerms {
 
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		String filename = "frch-" + basename + "-d" + docsPerPeriod;
+		basename = basename.replace("-chronologic", "");
+		String filename = "ch-" + basename + "-d" + docsPerPeriod;
 		return filename;
 	}
 
