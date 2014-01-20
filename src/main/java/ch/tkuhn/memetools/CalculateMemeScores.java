@@ -209,7 +209,7 @@ public class CalculateMemeScores {
 
 	private double[] calculateMemeScoreValues(int mm, int m, int xm, int x, double relFq) {
 		double stick = (double) mm / (m + n);
-		double spark = (double) xm / (x + n);
+		double spark = (double) (xm + n) / (x + n);
 		double ps = stick / spark;
 		double ms = ps * relFq;
 		return new double[] {stick, spark, ps, ms};
