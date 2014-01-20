@@ -89,14 +89,14 @@ public class CalculateMemeScores {
 	}
 
 	private void init() {
+		appendMode = inputFile.getName().endsWith(".csv");
+
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
 		if (outputFile == null) {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 		}
-
-		appendMode = inputFile.getName().endsWith(".csv");
 
 		if (!appendMode) {
 			nm = new HashMap<String,Integer>();
@@ -217,6 +217,9 @@ public class CalculateMemeScores {
 
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
+		if (appendMode) {
+			return basename + "-a";
+		}
 		String filename = "ms-" + basename;
 		if (year != null) {
 			filename += "-y" + year;
@@ -225,9 +228,6 @@ public class CalculateMemeScores {
 			if (yearStart != null) filename += yearStart;
 			filename += "TO";
 			if (yearEnd != null) filename += yearEnd;
-		}
-		if (appendMode) {
-			filename += "-a";
 		}
 		return filename;
 	}

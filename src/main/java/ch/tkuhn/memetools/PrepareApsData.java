@@ -289,7 +289,7 @@ public class PrepareApsData {
 		MemeUtils.log(logFile, obj);
 	}
 
-	void logDetail(Object obj) {
+	private void logDetail(Object obj) {
 		if (verbose) log(obj);
 	}
 
