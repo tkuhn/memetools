@@ -66,6 +66,7 @@ public class PrepareApsData {
 			writeGmlFile();
 		} catch (IOException ex) {
 			log(ex);
+			System.exit(1);
 		}
 		log("Finished");
 	}

@@ -126,9 +126,8 @@ public class MemeUtils {
 
 	public static String normalize(String text) {
 		text = " " + text.toLowerCase() + " ";
-		text = text.replaceAll("[.,:;] ", " ");
-		text = text.replaceAll("[^a-z0-9\\-()\\[\\]{}_^.,:;/\\'|+]+", " ");
-		text = text.replaceAll("[^a-z0-9\\-()\\[\\]{}_^.,:;/\\'|+]+", " ");
+		text = text.replaceAll("([.,:;!?]) ", " $1 ");
+		text = text.replaceAll("\\s+", " ");
 		return text.trim();
 	}
 
