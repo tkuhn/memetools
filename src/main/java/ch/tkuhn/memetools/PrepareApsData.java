@@ -49,7 +49,7 @@ public class PrepareApsData {
 	private Map<String,String> titles;
 	private Map<String,String> dates;
 	private Map<String,String> abstracts;
-	private Map<String,List<String>> citations;
+	private Map<String,List<String>> references;
 
 	private Set<FileVisitOption> walkFileTreeOptions;
 
@@ -79,7 +79,7 @@ public class PrepareApsData {
 		titles = new HashMap<String,String>();
 		dates = new HashMap<String,String>();
 		abstracts = new HashMap<String,String>();
-		citations = new HashMap<String,List<String>>();
+		references = new HashMap<String,List<String>>();
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
@@ -142,8 +142,8 @@ public class PrepareApsData {
 					if (!titles.containsKey(doi)) {
 						titles.put(doi, title);
 						dates.put(doi, date);
-						// initialize also citations table:
-						citations.put(doi, new ArrayList<String>());
+						// initialize also references table:
+						references.put(doi, new ArrayList<String>());
 					} else {
 						logDetail("ERROR. Duplicate DOI: " + doi);
 						errors++;
@@ -214,7 +214,7 @@ public class PrepareApsData {
 					missing++;
 					continue;
 				}
-				citations.get(doi1).add(doi2);
+				references.get(doi1).add(doi2);
 			} else {
 				log("ERROR. Invalid line: " + line);
 				invalid++;
@@ -237,7 +237,7 @@ public class PrepareApsData {
 			DataEntry eT = new DataEntry(doi1, date, text);
 			if (abstracts.containsKey(doi1)) text += " " + abstracts.get(doi1);
 			DataEntry eTA = new DataEntry(doi1, date, text);
-			for (String doi2 : citations.get(doi1)) {
+			for (String doi2 : references.get(doi1)) {
 				text = titles.get(doi2);
 				eT.addCitedText(text);
 				if (abstracts.containsKey(doi2)) text += " " + abstracts.get(doi2);
@@ -273,8 +273,8 @@ public class PrepareApsData {
 			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
 			w.write("]\n");
 		}
-		for (String doi1 : citations.keySet()) {
-			for (String doi2 : citations.get(doi1)) {
+		for (String doi1 : references.keySet()) {
+			for (String doi2 : references.get(doi1)) {
 				w.write("edge [\n");
 				w.write("source \"" + doi1 + "\"\n");
 				w.write("target \"" + doi2 + "\"\n");
