@@ -67,6 +67,19 @@ public class CalculateMemeScores {
 	}
 
 	public void run() {
+		init();
+		try {
+			extractTerms();
+			countTerms();
+			writeTable();
+		} catch (IOException ex) {
+			log(ex);
+			System.exit(1);
+		}
+		log("Finished");
+	}
+
+	private void init() {
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
@@ -76,33 +89,34 @@ public class CalculateMemeScores {
 		emmp = new HashMap<String,Boolean>();
 		em = new HashMap<String,Integer>();
 		exm = new HashMap<String,Integer>();
+	}
 
-		try {
-			log("Extracting terms from input file: " + inputFile);
-			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-			int progress = 0;
-			String line;
-			while ((line = reader.readLine()) != null) {
-				progress++;
-				logProgress(progress);
-				DataEntry d = new DataEntry(line);
-				if (!considerYear(d.getYear())) continue;
-				et++;
-				recordStickingTerms(d);
-			}
-			reader.close();
-		} catch (IOException ex) {
-			log(ex);
-			System.exit(1);
+	private void extractTerms() throws IOException {
+		log("Extracting terms from input file: " + inputFile);
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+		int progress = 0;
+		String line;
+		while ((line = reader.readLine()) != null) {
+			progress++;
+			logProgress(progress);
+			DataEntry d = new DataEntry(line);
+			if (!considerYear(d.getYear())) continue;
+			et++;
+			recordStickingTerms(d);
 		}
+		reader.close();
 		log("Total number of documents: " + et);
 		log("Number of unique terms with meme score > 0: " + emm.size());
 
+		// Initialize all maps:
 		for (String w : emm.keySet()) {
 			nm.put(w, 0);
 			em.put(w, 0);
 			exm.put(w, 0);
 		}
+	}
+
+	private void countTerms() throws IOException {
 		int errors = 0;
 		try {
 			log("Counting terms...");
@@ -123,32 +137,29 @@ public class CalculateMemeScores {
 			System.exit(1);
 		}
 		log("Number of errors: " + errors);
+	}
+
+	private void writeTable() throws IOException {
 		log("Calculating meme scores and writing CSV file...");
-		try {
-			File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-			Writer w = new BufferedWriter(new FileWriter(csvFile));
-			MemeUtils.writeCsvLine(w, new Object[] {"MEME SCORE", "TERM", "ABS. FREQUENCY", "REL. FREQUENCY", "MM", "M",
-					"STICKING", "XM", "X", "SPARKING", "PROPAGATION SCORE"});
-			int progress = 0;
-			for (String term : nm.keySet()) {
-				progress++;
-				logProgress(progress);
-				int ex = et - em.get(term);
-				double stick = (double) emm.get(term) / (em.get(term) + n);
-				double spark = (double) (exm.get(term) + n) / (ex + n);
-				double ps = stick / spark;
-				int absFq = nm.get(term);
-				double relFq = (double) absFq / et;
-				double ms = ps * relFq;
-				MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em.get(term),
-						stick, exm.get(term), ex, spark, ps });
-			}
-			w.close();
-		} catch (IOException ex) {
-			log(ex);
-			System.exit(1);
+		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		MemeUtils.writeCsvLine(w, new Object[] {"TERM", "ABSFREQ", "RELFREQ", "MM", "M",
+				"STICKING", "XM", "X", "SPARKING", "PS-" + n, "MS-" + n});
+		int progress = 0;
+		for (String term : nm.keySet()) {
+			progress++;
+			logProgress(progress);
+			int ex = et - em.get(term);
+			double stick = (double) emm.get(term) / (em.get(term) + n);
+			double spark = (double) (exm.get(term) + n) / (ex + n);
+			double ps = stick / spark;
+			int absFq = nm.get(term);
+			double relFq = (double) absFq / et;
+			double ms = ps * relFq;
+			MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em.get(term),
+					stick, exm.get(term), ex, spark, ps });
 		}
-		log("Finished");
+		w.close();
 	}
 
 	private String getOutputFileName() {
