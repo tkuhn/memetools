@@ -23,6 +23,9 @@ public class CalculateMemeScores {
 
 	private File inputFile;
 
+	@Parameter(names = "-o", description = "Output file")
+	private File outputFile;
+
 	@Parameter(names = "-y", description = "Calculate scores for given year")
 	private Integer year;
 
@@ -55,6 +58,8 @@ public class CalculateMemeScores {
 		obj.run();
 	}
 
+	private boolean appendMode;
+
 	private Map<String,Integer> nm;
 
 	private int et;
@@ -69,9 +74,13 @@ public class CalculateMemeScores {
 	public void run() {
 		init();
 		try {
-			extractTerms();
-			countTerms();
-			writeTable();
+			if (appendMode) {
+				appendTable();
+			} else {
+				extractTerms();
+				countTerms();
+				writeTable();
+			}
 		} catch (IOException ex) {
 			log(ex);
 			System.exit(1);
@@ -83,12 +92,20 @@ public class CalculateMemeScores {
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
-		nm = new HashMap<String,Integer>();
-		et = 0;
-		emm = new HashMap<String,Integer>();
-		emmp = new HashMap<String,Boolean>();
-		em = new HashMap<String,Integer>();
-		exm = new HashMap<String,Integer>();
+		if (outputFile == null) {
+			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		}
+
+		appendMode = inputFile.getName().endsWith(".csv");
+
+		if (!appendMode) {
+			nm = new HashMap<String,Integer>();
+			et = 0;
+			emm = new HashMap<String,Integer>();
+			emmp = new HashMap<String,Boolean>();
+			em = new HashMap<String,Integer>();
+			exm = new HashMap<String,Integer>();
+		}
 	}
 
 	private void extractTerms() throws IOException {
@@ -141,30 +158,66 @@ public class CalculateMemeScores {
 
 	private void writeTable() throws IOException {
 		log("Calculating meme scores and writing CSV file...");
-		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		Writer w = new BufferedWriter(new FileWriter(outputFile));
 		MemeUtils.writeCsvLine(w, new Object[] {"TERM", "ABSFREQ", "RELFREQ", "MM", "M",
-				"STICKING", "XM", "X", "SPARKING", "PS-" + n, "MS-" + n});
+				"XM", "X", "STICK-" + n, "SPARK-" + n, "PS-" + n, "MS-" + n});
 		int progress = 0;
 		for (String term : nm.keySet()) {
 			progress++;
 			logProgress(progress);
-			int ex = et - em.get(term);
-			double stick = (double) emm.get(term) / (em.get(term) + n);
-			double spark = (double) (exm.get(term) + n) / (ex + n);
-			double ps = stick / spark;
 			int absFq = nm.get(term);
 			double relFq = (double) absFq / et;
-			double ms = ps * relFq;
-			MemeUtils.writeCsvLine(w, new Object[] { term, absFq, relFq, emm.get(term), em.get(term),
-					stick, exm.get(term), ex, spark, ps, ms });
+			int mm = emm.get(term);
+			int m = em.get(term);
+			int xm = exm.get(term);
+			int x = et - m;
+			double[] v = calculateMemeScoreValues(mm, m, xm, x, relFq);
+			MemeUtils.writeCsvLine(w, new Object[] { term, absFq, relFq, mm, m, xm, x, v[0], v[1], v[2], v[3]});
 		}
 		w.close();
 	}
 
+	private void appendTable() throws IOException {
+		log("Calculating meme scores and appending to CSV file...");
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
+		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		List<String> line = MemeUtils.readCsvLine(reader);
+		int relFq = line.indexOf("RELFREQ");
+		int mmCol = line.indexOf("MM");
+		int mCol = line.indexOf("M");
+		int xmCol = line.indexOf("XM");
+		int xCol = line.indexOf("X");
+		line.add("STICK-" + n);
+		line.add("SPARK-" + n);
+		line.add("PS-" + n);
+		line.add("MS-" + n);
+		MemeUtils.writeCsvLine(writer, line);
+		while ((line = MemeUtils.readCsvLine(reader)) != null) {
+			int mm = Integer.parseInt(line.get(mmCol));
+			int m = Integer.parseInt(line.get(mCol));
+			int xm = Integer.parseInt(line.get(xmCol));
+			int x = Integer.parseInt(line.get(xCol));
+			double[] v = calculateMemeScoreValues(mm, m, xm, x, relFq);
+			for (double d : v) {
+				line.add(d + "");
+			}
+			MemeUtils.writeCsvLine(writer, line);
+		}
+		reader.close();
+		writer.close();
+	}
+
+	private double[] calculateMemeScoreValues(int mm, int m, int xm, int x, double relFq) {
+		double stick = (double) mm / (m + n);
+		double spark = (double) xm / (x + n);
+		double ps = stick / spark;
+		double ms = ps * relFq;
+		return new double[] {stick, spark, ps, ms};
+	}
+
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		String filename = "ms-" + basename + "-n" + n;
+		String filename = "ms-" + basename;
 		if (year != null) {
 			filename += "-y" + year;
 		} else if (yearStart != null || yearEnd != null) {
@@ -172,6 +225,9 @@ public class CalculateMemeScores {
 			if (yearStart != null) filename += yearStart;
 			filename += "TO";
 			if (yearEnd != null) filename += yearEnd;
+		}
+		if (appendMode) {
+			filename += "-a";
 		}
 		return filename;
 	}
