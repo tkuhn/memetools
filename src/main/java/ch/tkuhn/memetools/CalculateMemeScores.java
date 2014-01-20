@@ -156,8 +156,8 @@ public class CalculateMemeScores {
 			int absFq = nm.get(term);
 			double relFq = (double) absFq / et;
 			double ms = ps * relFq;
-			MemeUtils.writeCsvLine(w, new Object[] { ms, term, absFq, relFq, emm.get(term), em.get(term),
-					stick, exm.get(term), ex, spark, ps });
+			MemeUtils.writeCsvLine(w, new Object[] { term, absFq, relFq, emm.get(term), em.get(term),
+					stick, exm.get(term), ex, spark, ps, ms });
 		}
 		w.close();
 	}
