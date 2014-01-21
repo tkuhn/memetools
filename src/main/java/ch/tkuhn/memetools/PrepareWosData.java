@@ -138,7 +138,9 @@ public class PrepareWosData {
 			while (!refs.isEmpty()) {
 				String doi2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				e.addCitedText(titles.get(doi2));
+				if (titles.containsKey(doi2)) {
+					e.addCitedText(titles.get(doi2));
+				}
 			}
 			wT.write(e.getLine() + "\n");
 		}
@@ -172,10 +174,12 @@ public class PrepareWosData {
 			while (!refs.isEmpty()) {
 				String doi2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				w.write("edge [\n");
-				w.write("source \"" + doi1 + "\"\n");
-				w.write("target \"" + doi2 + "\"\n");
-				w.write("]\n");
+				if (titles.containsKey(doi2)) {
+					w.write("edge [\n");
+					w.write("source \"" + doi1 + "\"\n");
+					w.write("target \"" + doi2 + "\"\n");
+					w.write("]\n");
+				}
 			}
 		}
 		w.write("]\n");
