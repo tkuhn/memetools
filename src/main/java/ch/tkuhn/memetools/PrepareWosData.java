@@ -120,7 +120,10 @@ public class PrepareWosData {
 	}
 
 	private void writeDataFile() throws IOException {
-		File file = new File(MemeUtils.getPreparedDataDir(), "wos-T.txt");
+		String filename = "wos-T";
+		if (cth > 0) filename += "-c" + cth;
+		if (rth > 0) filename += "-r" + rth;
+		File file = new File(MemeUtils.getPreparedDataDir(), filename + ".txt");
 		BufferedWriter wT = new BufferedWriter(new FileWriter(file));
 		for (String doi1 : titles.keySet()) {
 			String text = titles.get(doi1);
@@ -138,7 +141,10 @@ public class PrepareWosData {
 	}
 
 	private void writeGmlFile() throws IOException {
-		File file = new File(MemeUtils.getPreparedDataDir(), "wos.gml");
+		String filename = "wos";
+		if (cth > 0) filename += "-c" + cth;
+		if (rth > 0) filename += "-r" + rth;
+		File file = new File(MemeUtils.getPreparedDataDir(), filename + ".gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
