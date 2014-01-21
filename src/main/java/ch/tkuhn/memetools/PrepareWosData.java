@@ -1,8 +1,10 @@
 package ch.tkuhn.memetools;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -118,11 +120,55 @@ public class PrepareWosData {
 	}
 
 	private void writeDataFile() throws IOException {
-		// TODO
+		File file = new File(MemeUtils.getPreparedDataDir(), "wos-T.txt");
+		BufferedWriter wT = new BufferedWriter(new FileWriter(file));
+		for (String doi1 : titles.keySet()) {
+			String text = titles.get(doi1);
+			String year = years.get(doi1);
+			DataEntry e = new DataEntry(doi1, year, text);
+			String refs = references.get(doi1);
+			while (!refs.isEmpty()) {
+				String doi2 = refs.substring(0, 9);
+				refs = refs.substring(9);
+				e.addCitedText(titles.get(doi2));
+			}
+			wT.write(e.getLine() + "\n");
+		}
+		wT.close();
 	}
 
 	private void writeGmlFile() throws IOException {
-		// TODO
+		File file = new File(MemeUtils.getPreparedDataDir(), "wos.gml");
+		BufferedWriter w = new BufferedWriter(new FileWriter(file));
+		w.write("graph [\n");
+		w.write("directed 1\n");
+		for (String doi : titles.keySet()) {
+			String year = years.get(doi);
+			String text = titles.get(doi);
+			text = " " + text + " ";
+			w.write("node [\n");
+			w.write("id \"" + doi + "\"\n");
+			w.write("year \"" + year + "\"\n");
+			// TODO Make this general:
+			if (text.contains(" quantum ")) w.write("memeQuantum \"y\"\n");
+			if (text.contains(" traffic ")) w.write("memeTraffic \"y\"\n");
+			if (text.contains(" black hole ")) w.write("memeBlackHole \"y\"\n");
+			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
+			w.write("]\n");
+		}
+		for (String doi1 : references.keySet()) {
+			String refs = references.get(doi1);
+			while (!refs.isEmpty()) {
+				String doi2 = refs.substring(0, 9);
+				refs = refs.substring(9);
+				w.write("edge [\n");
+				w.write("source \"" + doi1 + "\"\n");
+				w.write("target \"" + doi2 + "\"\n");
+				w.write("]\n");
+			}
+		}
+		w.write("]\n");
+		w.close();
 	}
 
 	private void log(Object obj) {
@@ -167,7 +213,7 @@ public class PrepareWosData {
 		int citCount;
 
 		WosEntry(String line) {
-			String[] parts = line.split(";");
+			String[] parts = line.split(";", -1);
 			if (parts.length < 15) {
 				logDetail("Invalid line: " + line);
 				return;
