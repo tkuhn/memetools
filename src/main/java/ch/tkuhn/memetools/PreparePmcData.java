@@ -22,18 +22,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
 public class PreparePmcData {
 
-	@Parameter(names = "-v", description = "Write detailed log")
-	private boolean verbose = false;
-
 	private File logFile;
 
 	public static final void main(String[] args) {
-		PrepareApsData obj = new PrepareApsData();
+		PreparePmcData obj = new PreparePmcData();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -280,10 +276,6 @@ public class PreparePmcData {
 
 	private void log(Object text) {
 		MemeUtils.log(logFile, text);
-	}
-
-	void logDetail(Object text) {
-		if (verbose) log(text);
 	}
 
 	private void logProgress() {
