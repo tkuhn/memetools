@@ -55,6 +55,8 @@ public class PreparePmcData {
 	private Map<String,String> abstracts;
 	private Map<String,List<String>> references;
 
+	private int progress;
+
 	private int idMissing;
 	private int duplicateIds;
 	private int titleMissing;
@@ -87,6 +89,8 @@ public class PreparePmcData {
 		log("Starting...");
 
 		idMap = new HashMap<String,String>();
+
+		progress = 0;
 
 		idMissing = 0;
 		duplicateIds = 0;
@@ -127,6 +131,8 @@ public class PreparePmcData {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
 				if (path.toString().endsWith(".nxml")) {
+					progress++;
+					logProgress();
 					processXmlFile(path);
 				}
 				return FileVisitResult.CONTINUE;
@@ -148,7 +154,6 @@ public class PreparePmcData {
 	private static final String refPattern = "<pub-id[^>]* pub-id-type=\"(pmc|doi|pmid)\"[^>]*>(.*?)</pub-id>";
 
 	private void processXmlFile(Path path) throws IOException {
-		log("Reading file: " + path);
 		BufferedReader reader = new BufferedReader(new FileReader(path.toFile()), 64*1024);
 		StringBuffer content = new StringBuffer();
 		String line;
@@ -279,6 +284,10 @@ public class PreparePmcData {
 
 	void logDetail(Object text) {
 		if (verbose) log(text);
+	}
+
+	private void logProgress() {
+		if (progress % 100000 == 0) log(progress + "...");
 	}
 
 }
