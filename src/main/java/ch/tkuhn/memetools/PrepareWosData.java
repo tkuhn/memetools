@@ -84,8 +84,8 @@ public class PrepareWosData {
 	}
 
 	private void readData() throws IOException {
-		log("Reading files...");
 		File dir = new File(MemeUtils.getRawDataDir(), wosFolder);
+		log("Reading files from " + dir + " ...");
 		Files.walkFileTree(dir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
