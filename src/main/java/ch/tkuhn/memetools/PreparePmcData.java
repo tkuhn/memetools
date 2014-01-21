@@ -115,7 +115,6 @@ public class PreparePmcData {
 			if (!doi.isEmpty()) idMap.put(doi, pmcid);
 			String pmid = line.replaceFirst(idlinePattern, "$4");
 			if (!pmid.isEmpty()) idMap.put(pmid, pmcid);
-			log(pmcid + " " + doi + " " + pmid);
 		}
 		r.close();
 	}
