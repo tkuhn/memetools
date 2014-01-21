@@ -32,6 +32,9 @@ public class PrepareWosData {
 	@Parameter(names = "-cth", description = "Threshold on citations (discard publications with less citations)")
 	private int cth = 0;
 
+	@Parameter(names = "-d", description = "The directory to read the raw data from")
+	private File rawWosDataDir;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -84,9 +87,11 @@ public class PrepareWosData {
 	}
 
 	private void readData() throws IOException {
-		File dir = new File(MemeUtils.getRawDataDir(), wosFolder);
-		log("Reading files from " + dir + " ...");
-		Files.walkFileTree(dir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+		if (rawWosDataDir == null) {
+			rawWosDataDir = new File(MemeUtils.getRawDataDir(), wosFolder);
+		}
+		log("Reading files from " + rawWosDataDir + " ...");
+		Files.walkFileTree(rawWosDataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
 				if (path.toString().endsWith(".txt")) {
