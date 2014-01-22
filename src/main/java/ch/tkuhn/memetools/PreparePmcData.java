@@ -72,8 +72,8 @@ public class PreparePmcData {
 			processXmlFiles();
 			writeDataFiles();
 			writeGmlFile();
-		} catch (IOException ex) {
-			log(ex);
+		} catch (Throwable th) {
+			log(th);
 			System.exit(1);
 		}
 		log("Finished");
@@ -85,6 +85,10 @@ public class PreparePmcData {
 		log("Starting...");
 
 		idMap = new HashMap<String,String>();
+		titles = new HashMap<String,String>();
+		dates = new HashMap<String,String>();
+		abstracts = new HashMap<String,String>();
+		references = new HashMap<String,List<String>>();
 
 		progress = 0;
 
@@ -142,9 +146,9 @@ public class PreparePmcData {
 		log("Number of documents: " + titles.size());
 	}
 
-	private static final String idPattern = "<article-id[^>]* pub-id-type=\"pmc\"[^>]*>(.*?)</article-id>";
-	private static final String titlePattern = "<article-title[^>]*>(.*?)</article-title>";
-	private static final String abstractPattern = "<abstract[^>]*>(.*?)</abstract>";
+	private static final String idPattern = "^.*?<article-id[^>]* pub-id-type=\"pmc\"[^>]*>(.*?)</article-id>.*$";
+	private static final String titlePattern = "^.*?<article-title[^>]*>(.*?)</article-title>.*$";
+	private static final String abstractPattern = "^.*?<abstract[^>]*>(.*?)</abstract>.*$";
 	private static final String datePattern = "<pub-date[^>]*><day>([0-3]?[0-9])</day><month>([0-1]?[0-9])</month><year>([0-9][0-9][0-9][0-9])</year></pub-date>";
 	private static final String refPattern = "<pub-id[^>]* pub-id-type=\"(pmc|doi|pmid)\"[^>]*>(.*?)</pub-id>";
 
@@ -161,7 +165,7 @@ public class PreparePmcData {
 			idMissing++;
 			return;
 		}
-		String pmcid = "PMC" + c.replaceFirst("^.*?" + idPattern + ".*$", "$1");
+		String pmcid = "PMC" + c.replaceFirst(idPattern, "$1");
 		if (titles.containsKey(pmcid)) {
 			log("ERROR. Duplicate ID: " + pmcid);
 			duplicateIds++;
@@ -171,7 +175,7 @@ public class PreparePmcData {
 			titleMissing++;
 			return;
 		}
-		String title = c.replaceFirst("^.*?" + titlePattern + ".*$", "$1");
+		String title = c.replaceFirst(titlePattern, "$1");
 		String date = null;
 		Matcher dateMatcher = Pattern.compile(datePattern).matcher(c);
 		while (dateMatcher.find()) {
@@ -192,7 +196,7 @@ public class PreparePmcData {
 		titles.put(pmcid, MemeUtils.normalize(title));
 		dates.put(pmcid, date);
 		if (c.matches(abstractPattern)) {
-			String abs = c.replaceFirst("^.*?" + abstractPattern + ".*$", "$1");
+			String abs = c.replaceFirst(abstractPattern, "$1");
 			abstracts.put(pmcid, MemeUtils.normalize(abs));
 		} else {
 			abstractMissing++;

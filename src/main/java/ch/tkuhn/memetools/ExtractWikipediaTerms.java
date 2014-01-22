@@ -44,8 +44,9 @@ public class ExtractWikipediaTerms {
 		}
 		try {
 			obj.run();
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (Throwable th) {
+			obj.log(th);
+			System.exit(1);
 		}
 	}
 

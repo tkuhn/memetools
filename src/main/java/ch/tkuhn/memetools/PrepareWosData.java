@@ -66,8 +66,8 @@ public class PrepareWosData {
 			readData();
 			writeDataFile();
 			writeGmlFile();
-		} catch (IOException ex) {
-			log(ex);
+		} catch (Throwable th) {
+			log(th);
 			System.exit(1);
 		}
 		log("Finished");

@@ -54,8 +54,9 @@ public class DetectTrendTerms {
 		obj.inputFile = new File(obj.parameters.get(0));
 		try {
 			obj.run();
-		} catch (IOException ex) {
-			obj.log(ex);
+		} catch (Throwable th) {
+			obj.log(th);
+			System.exit(1);
 		}
 	}
 
