@@ -43,8 +43,6 @@ public class PreparePmcData {
 	private static String pmcIdsFile = "PMC-ids.csv";
 	private static String pmcXmlPath = "pmcoa-xml";
 
-	private static String idlinePattern = "^([^,]*,|\"[^\"]*\",){7}([^,]*|\"[^\"]*\"),(PMC[0-9]+),([0-9]*),([^,]*|\"[^\"]*\"),([^,]*|\"[^\"]*\")$";
-
 	private Map<String,String> idMap;
 	private Map<String,String> titles;
 	private Map<String,String> dates;
@@ -103,6 +101,8 @@ public class PreparePmcData {
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
 	}
 
+	private static String idlinePattern = "^([^,]*,|\"[^\"]*\",){7}([^,]*|\"[^\"]*\"),(PMC[0-9]+),([0-9]*),([^,]*|\"[^\"]*\"),([^,]*|\"[^\"]*\")$";
+
 	private void makeIdMap() throws IOException {
 		log("Reading IDs...");
 		File file = new File(MemeUtils.getRawDataDir(), pmcIdsFile);
@@ -149,7 +149,10 @@ public class PreparePmcData {
 	private static final String idPattern = "^.*?<article-id[^>]* pub-id-type=\"pmc\"[^>]*>(.*?)</article-id>.*$";
 	private static final String titlePattern = "^.*?<article-title[^>]*>(.*?)</article-title>.*$";
 	private static final String abstractPattern = "^.*?<abstract[^>]*>(.*?)</abstract>.*$";
-	private static final String datePattern = "<pub-date[^>]*><day>([0-3]?[0-9])</day><month>([0-1]?[0-9])</month><year>([0-9][0-9][0-9][0-9])</year></pub-date>";
+	private static final String datePattern = "<pub-date[^>]*>.*?</pub-date>";
+	private static final String dayPattern = "^.*?<day[^>]*>([0-3]?[0-9])</day>.*$";
+	private static final String monthPattern = "^.*?<month[^>]*>([0-1]?[0-9])</month>.*$";
+	private static final String yearPattern = "^.*?<year[^>]*>([0-9][0-9][0-9][0-9])</year>.*$";
 	private static final String refPattern = "<pub-id[^>]* pub-id-type=\"(pmc|doi|pmid)\"[^>]*>(.*?)</pub-id>";
 
 	private void processXmlFile(Path path) throws IOException {
@@ -179,13 +182,20 @@ public class PreparePmcData {
 		String date = null;
 		Matcher dateMatcher = Pattern.compile(datePattern).matcher(c);
 		while (dateMatcher.find()) {
-			String day = dateMatcher.group(1);
-			if (day.length() < 2) day = "0" + day;
-			String month = dateMatcher.group(2);
-			if (month.length() < 2) month = "0" + day;
-			String year = dateMatcher.group(3);
-			String d = year + "-" + month + "-" + day;
-			if (date == null || d.compareTo(date) < 0) {
+			String s = dateMatcher.group();
+			if (!s.matches(yearPattern)) continue;
+			String d = s.replaceFirst(yearPattern, "$1");
+			if (s.matches(monthPattern)) {
+				String month = s.replaceFirst(monthPattern, "$1");
+				if (month.length() < 2) month = "0" + month;
+				d += "-" + month;
+				if (s.matches(dayPattern)) {
+					String day = s.replaceFirst(dayPattern, "$1");
+					if (day.length() < 2) day = "0" + day;
+					d += "-" + day;
+				}
+			}
+			if (date == null || date.length() < d.length() || d.compareTo(date) < 0) {
 				date = d;
 			}
 		}
@@ -193,11 +203,11 @@ public class PreparePmcData {
 			dateMissing++;
 			return;
 		}
-		titles.put(pmcid, MemeUtils.normalize(title));
+		titles.put(pmcid, normalize(title));
 		dates.put(pmcid, date);
 		if (c.matches(abstractPattern)) {
 			String abs = c.replaceFirst(abstractPattern, "$1");
-			abstracts.put(pmcid, MemeUtils.normalize(abs));
+			abstracts.put(pmcid, normalize(abs));
 		} else {
 			abstractMissing++;
 		}
@@ -221,6 +231,15 @@ public class PreparePmcData {
 		references.put(pmcid, cited);
 	}
 
+	private String normalize(String s) {
+		s = s.replaceAll("</?(italic|bold)>", "");
+		s = s.replaceAll("<title>.*?</title>", " ");
+		s = s.replaceAll("</?(p|sec)>", " ");
+		s = s.replaceAll("<(sub|sup)>\\s+", " <$1>");
+		s = s.replaceAll("\\s+</(sub|sup)>", "</$1> ");
+		return MemeUtils.normalize(s);
+	}
+
 	private void writeDataFiles() throws IOException {
 		log("Writing data files...");
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "pmc-T.txt");
@@ -234,6 +253,7 @@ public class PreparePmcData {
 			if (abstracts.containsKey(pmcid1)) text += " " + abstracts.get(pmcid1);
 			DataEntry eTA = new DataEntry(pmcid1, date, text);
 			for (String pmcid2 : references.get(pmcid1)) {
+				if (!titles.containsKey(pmcid2)) continue;
 				text = titles.get(pmcid2);
 				eT.addCitedText(text);
 				if (abstracts.containsKey(pmcid2)) text += " " + abstracts.get(pmcid2);
