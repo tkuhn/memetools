@@ -218,6 +218,7 @@ public class PreparePmcData {
 	}
 
 	private void writeDataFiles() throws IOException {
+		log("Writing data files...");
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "pmc-T.txt");
 		File fileTA = new File(MemeUtils.getPreparedDataDir(), "pmc-TA.txt");
 		BufferedWriter wT = new BufferedWriter(new FileWriter(fileT));
@@ -242,6 +243,7 @@ public class PreparePmcData {
 	}
 
 	private void writeGmlFile() throws IOException {
+		log("Writing GML file...");
 		File file = new File(MemeUtils.getPreparedDataDir(), "pmc.gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");

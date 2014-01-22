@@ -116,7 +116,7 @@ public class PrepareWosData {
 			}
 			if (entry.refCount < rth) continue; 
 			if (entry.citCount < cth) continue; 
-			titles.put(entry.id, entry.title);
+			titles.put(entry.id, MemeUtils.normalize(entry.title));
 			years.put(entry.id, entry.year);
 			references.put(entry.id, entry.ref);
 		}
@@ -125,6 +125,7 @@ public class PrepareWosData {
 	}
 
 	private void writeDataFile() throws IOException {
+		log("Writing data file...");
 		String filename = "wos-T";
 		if (cth > 0) filename += "-c" + cth;
 		if (rth > 0) filename += "-r" + rth;
@@ -148,6 +149,7 @@ public class PrepareWosData {
 	}
 
 	private void writeGmlFile() throws IOException {
+		log("Writing GML file...");
 		String filename = "wos";
 		if (cth > 0) filename += "-c" + cth;
 		if (rth > 0) filename += "-r" + rth;

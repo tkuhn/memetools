@@ -226,6 +226,7 @@ public class PrepareApsData {
 	}
 
 	private void writeDataFiles() throws IOException {
+		log("Writing data files...");
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T.txt");
 		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA.txt");
 		int noAbstracts = 0;
@@ -252,6 +253,7 @@ public class PrepareApsData {
 	}
 
 	private void writeGmlFile() throws IOException {
+		log("Writing GML file...");
 		File file = new File(MemeUtils.getPreparedDataDir(), "aps.gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
