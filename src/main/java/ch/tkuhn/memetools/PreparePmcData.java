@@ -178,7 +178,11 @@ public class PreparePmcData {
 			titleMissing++;
 			return;
 		}
-		String title = c.replaceFirst(titlePattern, "$1");
+		String title = normalize(c.replaceFirst(titlePattern, "$1"));
+		if (title.isEmpty()) {
+			titleMissing++;
+			return;
+		}
 		String date = null;
 		Matcher dateMatcher = Pattern.compile(datePattern).matcher(c);
 		while (dateMatcher.find()) {
@@ -203,7 +207,7 @@ public class PreparePmcData {
 			dateMissing++;
 			return;
 		}
-		titles.put(pmcid, normalize(title));
+		titles.put(pmcid, title);
 		dates.put(pmcid, date);
 		if (c.matches(abstractPattern)) {
 			String abs = c.replaceFirst(abstractPattern, "$1");

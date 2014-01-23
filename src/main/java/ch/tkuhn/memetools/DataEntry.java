@@ -24,7 +24,7 @@ public class DataEntry {
 	}
 
 	public DataEntry(String line) {
-		String[] splitline = line.split("  ");
+		String[] splitline = line.split("  ", -1);
 		if (splitline.length < 3) {
 			throw new RuntimeException("Invalid line: " + line);
 		}
