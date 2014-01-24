@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -67,9 +70,11 @@ public class LookupTerms {
 	public void run() throws IOException {
 		init();
 		loadDictTerms();
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		List<String> line = MemeUtils.readCsvLineAsList(reader);
+		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		List<String> line = csvReader.read();
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
@@ -77,17 +82,17 @@ public class LookupTerms {
 			col = line.indexOf(colIndexOrName);
 		}
 		line.add(newColName);
-		MemeUtils.writeCsvLine(writer, line);
-		while ((line = MemeUtils.readCsvLineAsList(reader)) != null) {
+		csvWriter.write(line);
+		while ((line = csvReader.read()) != null) {
 			if (dictTerms.containsKey(line.get(col))) {
 				line.add("1");
 			} else {
 				line.add("0");
 			}
-			MemeUtils.writeCsvLine(writer, line);
+			csvWriter.write(line);
 		}
-		reader.close();
-		writer.close();
+		csvReader.close();
+		csvWriter.close();
 	}
 
 	private void init() {

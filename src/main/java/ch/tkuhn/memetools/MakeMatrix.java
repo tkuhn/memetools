@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -53,10 +56,11 @@ public class MakeMatrix {
 
 	public void run() throws IOException {
 		init();
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		String headerLine = reader.readLine();
-		List<String> header = MemeUtils.readCsvLineAsList(headerLine);
+		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		List<String> header = csvReader.read();
 		boolean[] textual = new boolean[header.size()];
 		for (String t : textColums.split(",")) {
 			if (t.isEmpty()) continue;
@@ -66,18 +70,17 @@ public class MakeMatrix {
 				textual[header.indexOf(t)] = true;
 			}
 		}
-		String line;
+		List<String> line;
 		int c = 0;
-		while ((line = reader.readLine()) != null) {
+		while ((line = csvReader.read()) != null) {
 			c++;
-			String[] entries = MemeUtils.readCsvLine(line);
-			for (int i = 0 ; i < entries.length ; i++) {
-				if (textual[i]) entries[i] = c + "";
+			for (int i = 0 ; i < line.size() ; i++) {
+				if (textual[i]) line.set(i, c + "");
 			}
-			MemeUtils.writeCsvLine(writer, entries);
+			csvWriter.write(line);
 		}
-		reader.close();
-		writer.close();
+		csvReader.close();
+		csvWriter.close();
 	}
 
 	private void init() {

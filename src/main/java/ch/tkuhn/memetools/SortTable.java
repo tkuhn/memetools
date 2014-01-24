@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.supercsv.io.CsvListReader;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -61,7 +62,7 @@ public class SortTable {
 		}
 	}
 
-	private List<String> content;
+	private List<List<String>> content;
 	private List<Pair<Integer,Double>> sortList;
 
 	public SortTable() {
@@ -69,26 +70,25 @@ public class SortTable {
 
 	public void run() throws IOException {
 		init();
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		String headerLine = reader.readLine();
-		List<String> header = MemeUtils.readCsvLineAsList(headerLine);
+		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> header = csvReader.read();
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
 		} else {
 			col = header.indexOf(colIndexOrName);
 		}
-		content.add(headerLine);
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] entries = MemeUtils.readCsvLine(line);
-			double value = Double.parseDouble(entries[col]);
+		content.add(header);
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			double value = Double.parseDouble(line.get(col));
 			if (uThreshold != null && value > uThreshold) continue;
 			if (lThreshold != null && value < lThreshold) continue;
 			sortList.add(Pair.of(content.size(), value));
 			content.add(line);
 		}
-		reader.close();
+		csvReader.close();
 		Collections.sort(sortList, new Comparator<Pair<Integer,Double>>() {
 			@Override
 			public int compare(Pair<Integer,Double> o1, Pair<Integer,Double> o2) {
@@ -111,7 +111,7 @@ public class SortTable {
 		if (outputFile == null) {
 			outputFile = new File(inputFile.getPath().replaceAll("\\..*$", "") + "-sorted.csv");
 		}
-		content = new ArrayList<String>();
+		content = new ArrayList<List<String>>();
 		sortList = new ArrayList<Pair<Integer,Double>>();
 	}
 

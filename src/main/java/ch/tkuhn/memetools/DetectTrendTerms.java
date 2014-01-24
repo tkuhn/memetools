@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -81,19 +84,20 @@ public class DetectTrendTerms {
 		thisCount = new HashMap<String,Integer>();
 
 		log("Loading terms from " + termFile + "...");
-		BufferedReader termReader = new BufferedReader(new FileReader(termFile));
-		List<String> firstLine = MemeUtils.readCsvLineAsList(termReader);
+		BufferedReader r = new BufferedReader(new FileReader(termFile));
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> firstLine = csvReader.read();
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
 		} else {
 			col = firstLine.indexOf(colIndexOrName);
 		}
-		String[] l;
-		while ((l = MemeUtils.readCsvLine(termReader)) != null) {
-			terms.put(l[col], true);
+		List<String> l;
+		while ((l = csvReader.read()) != null) {
+			terms.put(l.get(col), true);
 		}
-		termReader.close();
+		csvReader.close();
 		log("Number of terms loaded: " + terms.size());
 
 		int t = 0;
@@ -118,14 +122,15 @@ public class DetectTrendTerms {
 		log("Writing output...");
 		t = 0;
 		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		Writer writer = new BufferedWriter(new FileWriter(csvFile));
-		MemeUtils.writeCsvLine(writer, new Object[] {"TERM", "MAX-ABS-CHANGE", "MAX-REL-CHANGE"});
+		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write("TERM", "MAX-ABS-CHANGE", "MAX-REL-CHANGE");
 		for (String term : terms.keySet()) {
 			logProgress(t);
 			t++;
-			MemeUtils.writeCsvLine(writer, new Object[] { term, absFreqCh.get(term), relFreqCh.get(term) });
+			csvWriter.write(term, absFreqCh.get(term), relFreqCh.get(term));
 		}
-		writer.close();
+		csvWriter.close();
 		log("Finished");
 	}
 

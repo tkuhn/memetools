@@ -1,21 +1,15 @@
 package ch.tkuhn.memetools;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
-import au.com.bytecode.opencsv.CSVParser;
-import au.com.bytecode.opencsv.CSVWriter;
+import org.supercsv.prefs.CsvPreference;
 
 public class MemeUtils {
 
@@ -31,7 +25,7 @@ public class MemeUtils {
 	private static File preparedDataDir;
 	private static File outputDataDir;
 
-	private static CSVParser csvParser;
+	private static CsvPreference csvPreference;
 
 	public static File getLogDir() {
 		if (logDir == null) {
@@ -71,47 +65,11 @@ public class MemeUtils {
 		return df.format(n);
 	}
 
-	public static void writeCsvLine(Writer writer, Object[] line) throws IOException {
-		CSVWriter csvWriter = getCsvWriter(writer);
-		String[] s = new String[line.length];
-		for (int i = 0 ; i < line.length ; i++) {
-			s[i] = line[i] + "";
+	public static CsvPreference getCsvPreference() {
+		if (csvPreference == null) {
+			csvPreference = new CsvPreference.Builder('"', ',', "\n").build();
 		}
-		csvWriter.writeNext(s);
-	}
-
-	public static void writeCsvLine(Writer writer, List<?> line) throws IOException {
-		CSVWriter csvWriter = getCsvWriter(writer);
-		String[] s = new String[line.size()];
-		for (int i = 0 ; i < line.size() ; i++) {
-			s[i] = line.get(i) + "";
-		}
-		csvWriter.writeNext(s);
-	}
-
-	private static CSVWriter getCsvWriter(Writer writer) {
-		return new CSVWriter(writer, ',', '"', '\\', "\n");
-	}
-
-	public static String[] readCsvLine(BufferedReader reader) throws IOException {
-		if (!reader.ready()) return null;
-		String line = reader.readLine();
-		return readCsvLine(line);
-	}
-
-	public static String[] readCsvLine(String line) throws IOException {
-		if (csvParser == null) {
-			csvParser = new CSVParser(',', '"', '\\');
-		}
-		return csvParser.parseLine(line);
-	}
-
-	public static List<String> readCsvLineAsList(BufferedReader reader) throws IOException {
-		return new ArrayList<String>(Arrays.asList(readCsvLine(reader)));
-	}
-
-	public static List<String> readCsvLineAsList(String line) throws IOException {
-		return new ArrayList<String>(Arrays.asList(readCsvLine(line)));
+		return csvPreference;
 	}
 
 	public static String normalize(String text) {

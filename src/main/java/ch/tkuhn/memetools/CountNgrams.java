@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.supercsv.io.CsvListWriter;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -97,16 +99,17 @@ public class CountNgrams {
 		try {
 			File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 			Writer w = new BufferedWriter(new FileWriter(csvFile));
-			MemeUtils.writeCsvLine(w, new Object[] {"COUNT", "TERM"});
+			CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+			csvWriter.write("COUNT", "TERM");
 			for (String term : ngrams.keySet()) {
 				int c = ngrams.get(term);
 				if (c >= t) {
 					n++;
 					logProgress(n);
-					MemeUtils.writeCsvLine(w, new Object[] { c, term });
+					csvWriter.write(c, term);
 				}
 			}
-			w.close();
+			csvWriter.close();
 		} catch (IOException ex) {
 			log(ex);
 			System.exit(1);

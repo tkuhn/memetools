@@ -12,7 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import au.com.bytecode.opencsv.CSVReader;
+import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -64,14 +65,14 @@ public class CalculateComemes {
 
 		System.out.println("Reading " + count + " memes from " + memeFileName);
 		try {
-			CSVReader reader = new CSVReader(new FileReader(memeFileName));
-			String [] row;
+			CsvListReader reader = new CsvListReader(new FileReader(memeFileName), MemeUtils.getCsvPreference());
+			List<String> row;
 			int c = -1;
-			while ((row = reader.readNext()) != null) {
+			while ((row = reader.read()) != null) {
 				c = c + 1;
 				if (c == 0) continue;
 				if (c > count) break;
-				String meme = row[1];
+				String meme = row.get(1);
 				int l = meme.trim().split("\\s+").length;
 				if (l > grams) grams = l;
 				memes.put(meme, c);
@@ -129,7 +130,8 @@ public class CalculateComemes {
 		System.out.println("Number of errors: " + errors);
 		System.out.println("Calculating comeme scores and writing CSV file...");
 		try {
-			Writer csvWriter = new BufferedWriter(new FileWriter(getOutputFile(inputFile, "csv")));
+			Writer w = new BufferedWriter(new FileWriter(getOutputFile(inputFile, "csv")));
+			CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 			Writer gmlWriter = new BufferedWriter(new FileWriter(getOutputFile(inputFile, "gml")));
 			gmlWriter.write("graph [\n");
 			gmlWriter.write("directed 0\n");
@@ -168,7 +170,7 @@ public class CalculateComemes {
 						}
 					}
 				}
-				MemeUtils.writeCsvLine(csvWriter, row);
+				csvWriter.write(row);
 			}
 			gmlWriter.write("]\n");
 			csvWriter.close();

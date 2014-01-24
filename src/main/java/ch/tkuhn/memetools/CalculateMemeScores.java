@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -159,8 +162,9 @@ public class CalculateMemeScores {
 	private void writeTable() throws IOException {
 		log("Calculating meme scores and writing CSV file...");
 		Writer w = new BufferedWriter(new FileWriter(outputFile));
-		MemeUtils.writeCsvLine(w, new Object[] {"TERM", "ABSFREQ", "RELFREQ", "MM", "M",
-				"XM", "X", "STICK-" + n, "SPARK-" + n, "PS-" + n, "MS-" + n});
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write("TERM", "ABSFREQ", "RELFREQ", "MM", "M",
+				"XM", "X", "STICK-" + n, "SPARK-" + n, "PS-" + n, "MS-" + n);
 		int progress = 0;
 		for (String term : nm.keySet()) {
 			progress++;
@@ -172,16 +176,18 @@ public class CalculateMemeScores {
 			int xm = exm.get(term);
 			int x = et - m;
 			double[] v = calculateMemeScoreValues(mm, m, xm, x, relFq);
-			MemeUtils.writeCsvLine(w, new Object[] { term, absFq, relFq, mm, m, xm, x, v[0], v[1], v[2], v[3]});
+			csvWriter.write(term, absFq, relFq, mm, m, xm, x, v[0], v[1], v[2], v[3]);
 		}
-		w.close();
+		csvWriter.close();
 	}
 
 	private void appendTable() throws IOException {
 		log("Calculating meme scores and appending to CSV file...");
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		List<String> line = MemeUtils.readCsvLineAsList(reader);
+		BufferedReader f = new BufferedReader(new FileReader(inputFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(f, MemeUtils.getCsvPreference());
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		List<String> line = csvReader.read();
 		int relFqCol = line.indexOf("RELFREQ");
 		int mmCol = line.indexOf("MM");
 		int mCol = line.indexOf("M");
@@ -191,8 +197,8 @@ public class CalculateMemeScores {
 		line.add("SPARK-" + n);
 		line.add("PS-" + n);
 		line.add("MS-" + n);
-		MemeUtils.writeCsvLine(writer, line);
-		while ((line = MemeUtils.readCsvLineAsList(reader)) != null) {
+		csvWriter.write(line);
+		while ((line = csvReader.read()) != null) {
 			int mm = Integer.parseInt(line.get(mmCol));
 			int m = Integer.parseInt(line.get(mCol));
 			int xm = Integer.parseInt(line.get(xmCol));
@@ -202,10 +208,10 @@ public class CalculateMemeScores {
 			for (double d : v) {
 				line.add(d + "");
 			}
-			MemeUtils.writeCsvLine(writer, line);
+			csvWriter.write(line);
 		}
-		reader.close();
-		writer.close();
+		csvReader.close();
+		csvWriter.close();
 	}
 
 	private double[] calculateMemeScoreValues(int mm, int m, int xm, int x, double relFq) {
