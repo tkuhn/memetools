@@ -71,7 +71,7 @@ public class SortTable {
 		init();
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
 		String headerLine = reader.readLine();
-		List<String> header = MemeUtils.readCsvLine(headerLine);
+		List<String> header = MemeUtils.readCsvLineAsList(headerLine);
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
@@ -81,8 +81,8 @@ public class SortTable {
 		content.add(headerLine);
 		String line;
 		while ((line = reader.readLine()) != null) {
-			List<String> entries = MemeUtils.readCsvLine(line);
-			double value = Double.parseDouble(entries.get(col));
+			String[] entries = MemeUtils.readCsvLine(line);
+			double value = Double.parseDouble(entries[col]);
 			if (uThreshold != null && value > uThreshold) continue;
 			if (lThreshold != null && value < lThreshold) continue;
 			sortList.add(Pair.of(content.size(), value));

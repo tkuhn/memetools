@@ -69,7 +69,7 @@ public class LookupTerms {
 		loadDictTerms();
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		List<String> line = MemeUtils.readCsvLine(reader);
+		List<String> line = MemeUtils.readCsvLineAsList(reader);
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
@@ -78,7 +78,7 @@ public class LookupTerms {
 		}
 		line.add(newColName);
 		MemeUtils.writeCsvLine(writer, line);
-		while ((line = MemeUtils.readCsvLine(reader)) != null) {
+		while ((line = MemeUtils.readCsvLineAsList(reader)) != null) {
 			if (dictTerms.containsKey(line.get(col))) {
 				line.add("1");
 			} else {

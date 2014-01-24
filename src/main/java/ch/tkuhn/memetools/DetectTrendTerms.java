@@ -82,15 +82,16 @@ public class DetectTrendTerms {
 
 		log("Loading terms from " + termFile + "...");
 		BufferedReader termReader = new BufferedReader(new FileReader(termFile));
-		List<String> l = MemeUtils.readCsvLine(termReader);
+		List<String> firstLine = MemeUtils.readCsvLineAsList(termReader);
 		int col;
 		if (colIndexOrName.matches("[0-9]+")) {
 			col = Integer.parseInt(colIndexOrName);
 		} else {
-			col = l.indexOf(colIndexOrName);
+			col = firstLine.indexOf(colIndexOrName);
 		}
+		String[] l;
 		while ((l = MemeUtils.readCsvLine(termReader)) != null) {
-			terms.put(l.get(col), true);
+			terms.put(l[col], true);
 		}
 		termReader.close();
 		log("Number of terms loaded: " + terms.size());

@@ -181,7 +181,7 @@ public class CalculateMemeScores {
 		log("Calculating meme scores and appending to CSV file...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		List<String> line = MemeUtils.readCsvLine(reader);
+		List<String> line = MemeUtils.readCsvLineAsList(reader);
 		int relFqCol = line.indexOf("RELFREQ");
 		int mmCol = line.indexOf("MM");
 		int mCol = line.indexOf("M");
@@ -192,7 +192,7 @@ public class CalculateMemeScores {
 		line.add("PS-" + n);
 		line.add("MS-" + n);
 		MemeUtils.writeCsvLine(writer, line);
-		while ((line = MemeUtils.readCsvLine(reader)) != null) {
+		while ((line = MemeUtils.readCsvLineAsList(reader)) != null) {
 			int mm = Integer.parseInt(line.get(mmCol));
 			int m = Integer.parseInt(line.get(mCol));
 			int xm = Integer.parseInt(line.get(xmCol));

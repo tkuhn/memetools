@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -92,17 +93,25 @@ public class MemeUtils {
 		return new CSVWriter(writer, ',', '"', '\\', "\n");
 	}
 
-	public static List<String> readCsvLine(BufferedReader reader) throws IOException {
+	public static String[] readCsvLine(BufferedReader reader) throws IOException {
 		if (!reader.ready()) return null;
 		String line = reader.readLine();
 		return readCsvLine(line);
 	}
 
-	public static List<String> readCsvLine(String line) throws IOException {
+	public static String[] readCsvLine(String line) throws IOException {
 		if (csvParser == null) {
 			csvParser = new CSVParser(',', '"', '\\');
 		}
-		return Arrays.asList(csvParser.parseLine(line));
+		return csvParser.parseLine(line);
+	}
+
+	public static List<String> readCsvLineAsList(BufferedReader reader) throws IOException {
+		return new ArrayList<String>(Arrays.asList(readCsvLine(reader)));
+	}
+
+	public static List<String> readCsvLineAsList(String line) throws IOException {
+		return new ArrayList<String>(Arrays.asList(readCsvLine(line)));
 	}
 
 	public static String normalize(String text) {

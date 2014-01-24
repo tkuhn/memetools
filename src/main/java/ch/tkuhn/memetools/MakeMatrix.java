@@ -56,7 +56,7 @@ public class MakeMatrix {
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
 		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
 		String headerLine = reader.readLine();
-		List<String> header = MemeUtils.readCsvLine(headerLine);
+		List<String> header = MemeUtils.readCsvLineAsList(headerLine);
 		boolean[] textual = new boolean[header.size()];
 		for (String t : textColums.split(",")) {
 			if (t.isEmpty()) continue;
@@ -70,9 +70,9 @@ public class MakeMatrix {
 		int c = 0;
 		while ((line = reader.readLine()) != null) {
 			c++;
-			List<String> entries = MemeUtils.readCsvLine(line);
-			for (int i = 0 ; i < entries.size() ; i++) {
-				if (textual[i]) entries.set(i, c + "");
+			String[] entries = MemeUtils.readCsvLine(line);
+			for (int i = 0 ; i < entries.length ; i++) {
+				if (textual[i]) entries[i] = c + "";
 			}
 			MemeUtils.writeCsvLine(writer, entries);
 		}
