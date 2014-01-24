@@ -9,9 +9,12 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
+import au.com.bytecode.opencsv.CSVParser;
+import au.com.bytecode.opencsv.CSVWriter;
 
 public class MemeUtils {
 
@@ -26,6 +29,8 @@ public class MemeUtils {
 	private static File rawDataDir;
 	private static File preparedDataDir;
 	private static File outputDataDir;
+
+	private static CSVParser csvParser;
 
 	public static File getLogDir() {
 		if (logDir == null) {
@@ -66,35 +71,25 @@ public class MemeUtils {
 	}
 
 	public static void writeCsvLine(Writer writer, Object[] line) throws IOException {
-		boolean first = true;
-		for (Object o : line) {
-			if (!first) writer.write(",");
-			first = false;
-			writeCsvEntry(o, writer);
+		CSVWriter csvWriter = getCsvWriter(writer);
+		String[] s = new String[line.length];
+		for (int i = 0 ; i < line.length ; i++) {
+			s[i] = line[i] + "";
 		}
-		writer.write("\n");
+		csvWriter.writeNext(s);
 	}
 
-	public static void writeCsvLine(Writer writer, Iterable<?> line) throws IOException {
-		boolean first = true;
-		for (Object o : line) {
-			if (!first) writer.write(",");
-			first = false;
-			writeCsvEntry(o, writer);
+	public static void writeCsvLine(Writer writer, List<?> line) throws IOException {
+		CSVWriter csvWriter = getCsvWriter(writer);
+		String[] s = new String[line.size()];
+		for (int i = 0 ; i < line.size() ; i++) {
+			s[i] = line.get(i) + "";
 		}
-		writer.write("\n");
+		csvWriter.writeNext(s);
 	}
 
-	private static void writeCsvEntry(Object o, Writer writer) throws IOException {
-		if (o instanceof String) {
-			String s = (String) o;
-			if (s.matches(".*[,\"].*")) {
-				s = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-			}
-			writer.write(s);
-		} else {
-			writer.write(o + "");
-		}
+	private static CSVWriter getCsvWriter(Writer writer) {
+		return new CSVWriter(writer, ',', '"', '\\', "\n");
 	}
 
 	public static List<String> readCsvLine(BufferedReader reader) throws IOException {
@@ -104,24 +99,10 @@ public class MemeUtils {
 	}
 
 	public static List<String> readCsvLine(String line) throws IOException {
-		List<String> entries = new ArrayList<String>();
-		while (!line.isEmpty()) {
-			if (line.matches("\"([^\"\\\\]|\\\\\"|\\\\\\\\)*\"(,.*)?")) {
-				String e = line.replaceFirst("^\"(([^\"\\\\]|\\\\\"|\\\\\\\\)*)\"(,.*)?$", "$1");
-				line = line.replaceFirst("^\"([^\"\\\\]|\\\\\"|\\\\\\\\)*\"((,.*)?)$", "$2");
-				if (line.startsWith(",")) line = line.substring(1);
-				e = e.replace("\\\"", "\"").replace("\\\\", "\\");
-				entries.add(e);
-			} else if (line.contains(",")) {
-				String e = line.substring(0, line.indexOf(','));
-				line = line.substring(line.indexOf(',') + 1);
-				entries.add(e);
-			} else {
-				entries.add(line);
-				line = "";
-			}
+		if (csvParser == null) {
+			csvParser = new CSVParser(',', '"', '\\');
 		}
-		return entries;
+		return Arrays.asList(csvParser.parseLine(line));
 	}
 
 	public static String normalize(String text) {
