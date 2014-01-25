@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -99,12 +100,13 @@ public class SortTable {
 				}
 			}
 		});
-		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile), 64*1024);
-		writer.write(content.get(0) + "\n");
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write(content.get(0));
 		for (Pair<Integer,Double> p : sortList) {
-			writer.write(content.get(p.getLeft()) + "\n");
+			csvWriter.write(content.get(p.getLeft()));
 		}
-		writer.close();
+		csvWriter.close();
 	}
 
 	private void init() {
