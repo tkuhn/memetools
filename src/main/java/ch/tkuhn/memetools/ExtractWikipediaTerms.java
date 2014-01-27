@@ -130,7 +130,7 @@ public class ExtractWikipediaTerms {
 		});
 		log("Number of labels: " + labels.size());
 
-		log("Retrieving and normalizing labels...");
+		log("Writing output file...");
 		File outputFile = new File(MemeUtils.getOutputDataDir(), "wikipedia-terms.txt");
 		final BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 		try {
