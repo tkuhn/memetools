@@ -59,8 +59,7 @@ public class ExtractWikipediaTerms {
 	private Map<String,Boolean> categories = new HashMap<String,Boolean>();
 	private Map<String,Boolean> newCategories = new HashMap<String,Boolean>();
 	private Map<String,Boolean> terms = new HashMap<String,Boolean>();
-
-	private int labelCount;
+	private Map<String,Boolean> labels = new HashMap<String,Boolean>();
 
 	public ExtractWikipediaTerms() {
 	}
@@ -116,28 +115,39 @@ public class ExtractWikipediaTerms {
 		});
 		log("Number of terms: " + terms.size());
 
-		log("Retrieving and writing labels...");
-		File outputFile = new File(MemeUtils.getOutputDataDir(), "wikipedia-terms.txt");
-		final BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
-		labelCount = 0;
+		log("Retrieving and normalizing labels...");
 		handleDbpediaData("labels_en.nt", new RDFHandlerBase() {
 			@Override
 			public void handleStatement(Statement st) throws RDFHandlerException {
 				if (!st.getPredicate().equals(label)) return;
 				if (terms.containsKey(st.getSubject().toString())) {
-					try {
-						writer.write(st.getObject().stringValue() + "\n");
-						labelCount++;
-					} catch (IOException ex) {
-						ex.printStackTrace();
+					String label = MemeUtils.normalize(st.getObject().stringValue());
+					if (keepLabel(label)) {
+						labels.put(label, true);
 					}
 				}
 			}
 		});
+		log("Number of labels: " + labels.size());
+
+		log("Retrieving and normalizing labels...");
+		File outputFile = new File(MemeUtils.getOutputDataDir(), "wikipedia-terms.txt");
+		final BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+		try {
+			for (String l : labels.keySet()) {
+				writer.write(l + "\n");
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 		writer.close();
-		log("Number of labels: " + labelCount);
 
 		log("Finished");
+	}
+
+	private boolean keepLabel(String label) {
+		if (label.matches(".* \\(.*\\)")) return false;
+		return true;
 	}
 
 	private void handleDbpediaData(String fileName, RDFHandler rdfHandler) throws Exception {
