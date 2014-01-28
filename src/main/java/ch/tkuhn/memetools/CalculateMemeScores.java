@@ -8,9 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
@@ -63,13 +61,7 @@ public class CalculateMemeScores {
 
 	private boolean appendMode;
 
-	private Map<String,Integer> nm;
-
-	private int et;
-	private Map<String,Integer> emm;
-	private Map<String,Boolean> emmp;
-	private Map<String,Integer> em;
-	private Map<String,Integer> exm;
+	private MemeScorer ms;
 
 	public CalculateMemeScores() {
 	}
@@ -102,12 +94,7 @@ public class CalculateMemeScores {
 		}
 
 		if (!appendMode) {
-			nm = new HashMap<String,Integer>();
-			et = 0;
-			emm = new HashMap<String,Integer>();
-			emmp = new HashMap<String,Boolean>();
-			em = new HashMap<String,Integer>();
-			exm = new HashMap<String,Integer>();
+			ms = new MemeScorer(true);
 		}
 	}
 
@@ -121,19 +108,12 @@ public class CalculateMemeScores {
 			logProgress(progress);
 			DataEntry d = new DataEntry(line);
 			if (!considerYear(d.getYear())) continue;
-			et++;
-			recordStickingTerms(d);
+			ms.screenTerms(d);
 		}
 		reader.close();
-		log("Total number of documents: " + et);
-		log("Number of unique terms with meme score > 0: " + emm.size());
-
-		// Initialize all maps:
-		for (String w : emm.keySet()) {
-			nm.put(w, 0);
-			em.put(w, 0);
-			exm.put(w, 0);
-		}
+		log("Total number of documents: " + ms.getT());
+		log("Number of unique terms with meme score > 0: " + ms.getMM().size());
+		ms.fixTerms();
 	}
 
 	private void countTerms() throws IOException {
@@ -148,8 +128,7 @@ public class CalculateMemeScores {
 				logProgress(progress);
 				DataEntry d = new DataEntry(line);
 				if (!considerYear(d.getYear())) continue;
-				recordCitedTerms(d);
-				recordTerms(d);
+				ms.recordTerms(d);
 			}
 			reader.close();
 		} catch (IOException ex) {
@@ -166,17 +145,11 @@ public class CalculateMemeScores {
 		csvWriter.write("TERM", "ABSFREQ", "RELFREQ", "MM", "M",
 				"XM", "X", "STICK-" + n, "SPARK-" + n, "PS-" + n, "MS-" + n);
 		int progress = 0;
-		for (String term : nm.keySet()) {
+		for (String t : ms.getF().keySet()) {
 			progress++;
 			logProgress(progress);
-			int absFq = nm.get(term);
-			double relFq = (double) absFq / et;
-			int mm = emm.get(term);
-			int m = em.get(term);
-			int xm = exm.get(term);
-			int x = et - m;
-			double[] v = calculateMemeScoreValues(mm, m, xm, x, relFq);
-			csvWriter.write(term, absFq, relFq, mm, m, xm, x, v[0], v[1], v[2], v[3]);
+			double[] v = ms.calculateMemeScoreValues(t, n);
+			csvWriter.write(t, ms.getF(t), ms.getRelF(t), ms.getMM(t), ms.getM(t), ms.getXM(t), ms.getX(t), v[0], v[1], v[2], v[3]);
 		}
 		csvWriter.close();
 	}
@@ -204,7 +177,7 @@ public class CalculateMemeScores {
 			int xm = Integer.parseInt(line.get(xmCol));
 			int x = Integer.parseInt(line.get(xCol));
 			double relFq = Double.parseDouble(line.get(relFqCol));
-			double[] v = calculateMemeScoreValues(mm, m, xm, x, relFq);
+			double[] v = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, relFq, n);
 			for (double d : v) {
 				line.add(d + "");
 			}
@@ -212,14 +185,6 @@ public class CalculateMemeScores {
 		}
 		csvReader.close();
 		csvWriter.close();
-	}
-
-	private double[] calculateMemeScoreValues(int mm, int m, int xm, int x, double relFq) {
-		double stick = (double) mm / (m + n);
-		double spark = (double) (xm + n) / (x + n);
-		double ps = stick / spark;
-		double ms = ps * relFq;
-		return new double[] {stick, spark, ps, ms};
 	}
 
 	private String getOutputFileName() {
@@ -244,94 +209,6 @@ public class CalculateMemeScores {
 		if (yearStart != null && y < yearStart) return false;
 		if (yearEnd != null && y > yearEnd) return false;
 		return true;
-	}
-
-	private void recordStickingTerms(DataEntry d) {
-		Map<String,Boolean> processed = new HashMap<String,Boolean>();
-		String allCited = "";
-		for (String c : d.getCitedText()) allCited += "  " + c.trim();
-		allCited += " ";
-		String[] tokens = d.getText().trim().split(" ");
-		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
-			String pre = "   ";
-			if (p1 > 0) pre = " " + tokens[p1-1];
-			String term = " ";
-			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
-				term += tokens[p2] + " ";
-				String t = term.trim();
-				String post = "   ";
-				if (p2 < tokens.length-1) post = tokens[p2+1] + " ";
-				if (processed.containsKey(t)) continue;
-				if (allCited.contains(term)) {
-					int c = countOccurrences(allCited, term);
-					if (countOccurrences(allCited, pre + term) < c && countOccurrences(allCited, term + post) < c) {
-						increaseMapEntry(emm, t);
-						processed.put(t, true);
-					} else {
-						emmp.put(t, true);
-					}
-				} else {
-					break;
-				}
-			}
-		}
-	}
-
-	private void recordTerms(DataEntry d) {
-		Map<String,Boolean> processed = new HashMap<String,Boolean>();
-		String allCited = "";
-		for (String c : d.getCitedText()) allCited += "  " + c.trim();
-		allCited += " ";
-		String[] tokens = d.getText().trim().split(" ");
-		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
-			String term = " ";
-			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
-				term += tokens[p2] + " ";
-				String t = term.trim();
-				if (!emm.containsKey(t) && !emmp.containsKey(t)) break;
-				if (!emm.containsKey(t)) continue;
-				if (processed.containsKey(t)) continue;
-				processed.put(t, true);
-				increaseMapEntry(nm, t);
-				if (!allCited.contains(term)) {
-					increaseMapEntry(exm, t);
-				}
-			}
-		}
-	}
-
-	private int countOccurrences(String string, String subString) {
-		int c = 0;
-		int p = -1;
-		while ((p = string.indexOf(subString, p+1)) > -1) c++;
-		return c;
-	}
-
-	private void recordCitedTerms(DataEntry d) {
-		Map<String,Boolean> processed = new HashMap<String,Boolean>();
-		for (String cited : d.getCitedText()) {
-			String[] tokens = cited.trim().split(" ");
-			for (int p1 = 0 ; p1 < tokens.length ; p1++) {
-				String term = " ";
-				for (int p2 = p1 ; p2 < tokens.length ; p2++) {
-					term += tokens[p2] + " ";
-					String t = term.trim();
-					if (!emm.containsKey(t) && !emmp.containsKey(t)) break;
-					if (!emm.containsKey(t)) continue;
-					if (processed.containsKey(t)) continue;
-					processed.put(t, true);
-					increaseMapEntry(em, t);
-				}
-			}
-		}
-	}
-
-	private static void increaseMapEntry(Map<String,Integer> map, String key) {
-		if (map.containsKey(key)) {
-			map.put(key, map.get(key) + 1);
-		} else {
-			map.put(key, 1);
-		}
 	}
 
 	private void logProgress(int p) {
