@@ -20,16 +20,31 @@ public class MemeScorer {
 	private Map<String,Boolean> terms;
 
 	public MemeScorer(boolean screenMode) {
+		init();
 		this.screenMode = screenMode;
+		termBeginnings = new HashMap<String,Boolean>();
+		if (!screenMode) {
+			terms = new HashMap<String,Boolean>();
+		}
+	}
+
+	public MemeScorer(MemeScorer termShareObject) {
+		init();
+		screenMode = false;
+		terms = termShareObject.terms;
+		termBeginnings = termShareObject.termBeginnings;
+	}
+
+	private void init() {
 		f = new HashMap<String,Integer>();
 		t = 0;
 		mm = new HashMap<String,Integer>();
 		m = new HashMap<String,Integer>();
 		xm = new HashMap<String,Integer>();
-		termBeginnings = new HashMap<String,Boolean>();
-		if (!screenMode) {
-			terms = new HashMap<String,Boolean>();
-		}
+	}
+
+	public Map<String,Boolean> getTerms() {
+		return terms;
 	}
 
 	public Map<String,Integer> getF() {
@@ -133,7 +148,7 @@ public class MemeScorer {
 		terms.put(term, true);
 		String[] parts = term.split(" ");
 		String beginning = "";
-		for (int i = 0 ; i < term.length()-1 ; i++) {
+		for (int i = 0 ; i < parts.length-1 ; i++) {
 			beginning += " " + parts[i];
 			beginning = beginning.trim();
 			termBeginnings.put(beginning, true);
