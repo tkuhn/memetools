@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
 
 import com.beust.jcommander.JCommander;
@@ -32,6 +33,12 @@ public class CalculateHistory {
 
 	@Parameter(names = "-t", description = "File with terms", required = true)
 	private File termsFile;
+
+	@Parameter(names = "-tcol", description = "Index or name of column to read terms (if term file is in CSV format)")
+	private String termCol = "TERM";
+
+	@Parameter(names = "-c", description = "Only use first c terms")
+	private int termCount = -1;
 
 	@Parameter(names = "-m", description = "Metric to use: 'ms' = meme score")
 	private String metric = "ms";
@@ -111,15 +118,48 @@ public class CalculateHistory {
 
 	private void readTerms() throws IOException {
 		log("Reading terms from " + termsFile + " ...");
+		if (termsFile.toString().endsWith(".csv")) {
+			readTermsCsv();
+		} else {
+			readTermsTxt();
+		}
+		log("Number of terms: " + terms.size());
+	}
+
+	private void readTermsTxt() throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(termsFile));
 		String line;
 		while ((line = reader.readLine()) != null) {
 			String term = MemeUtils.normalize(line);
 			ms[0].addTerm(term);
 			terms.add(term);
+			if (termCount >= 0 && terms.size() >= termCount) {
+				break;
+			}
 		}
 		reader.close();
-		log("Number of terms: " + terms.size());
+	}
+
+	private void readTermsCsv() throws IOException {
+		BufferedReader r = new BufferedReader(new FileReader(termsFile));
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> header = csvReader.read();
+		int col;
+		if (termCol.matches("[0-9]+")) {
+			col = Integer.parseInt(termCol);
+		} else {
+			col = header.indexOf(termCol);
+		}
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			String term = MemeUtils.normalize(line.get(col));
+			ms[0].addTerm(term);
+			terms.add(term);
+			if (termCount >= 0 && terms.size() >= termCount) {
+				break;
+			}
+		}
+		csvReader.close();
 	}
 
 	private void processAndWriteData() throws IOException {
