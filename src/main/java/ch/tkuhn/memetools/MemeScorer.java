@@ -43,6 +43,14 @@ public class MemeScorer {
 		xm = new HashMap<String,Integer>();
 	}
 
+	public void clear() {
+		f.clear();
+		t = 0;
+		mm.clear();
+		m.clear();
+		xm.clear();
+	}
+
 	public Map<String,Boolean> getTerms() {
 		return terms;
 	}
@@ -52,6 +60,7 @@ public class MemeScorer {
 	}
 
 	public int getF(String term) {
+		if (!f.containsKey(term)) return 0;
 		return f.get(term);
 	}
 
@@ -68,6 +77,7 @@ public class MemeScorer {
 	}
 
 	public int getMM(String term) {
+		if (!mm.containsKey(term)) return 0;
 		return mm.get(term);
 	}
 
@@ -76,6 +86,7 @@ public class MemeScorer {
 	}
 
 	public int getM(String term) {
+		if (!m.containsKey(term)) return 0;
 		return m.get(term);
 	}
 
@@ -84,18 +95,22 @@ public class MemeScorer {
 	}
 
 	public int getXM(String term) {
+		if (!xm.containsKey(term)) return 0;
 		return xm.get(term);
 	}
 
 	public int getX(String term) {
+		if (!m.containsKey(term)) return t;
 		return t - m.get(term);
 	}
 
 	public double[] calculateMemeScoreValues(String term, int n) {
-		return calculateMemeScoreValues(getMM(term), getM(term), getXM(term), getX(term), getRelF(term), n);
+		return calculateMemeScoreValues(getMM(term), getM(term), getXM(term), getX(term), getF(term), n);
 	}
 
-	public static double[] calculateMemeScoreValues(int mmVal, int mVal, int xmVal, int xVal, double rfVal, int n) {
+	public static double[] calculateMemeScoreValues(int mmVal, int mVal, int xmVal, int xVal, int fVal, int n) {
+		int t = xVal + mVal;
+		double rfVal = (double) fVal / t;
 		double stick = (double) mmVal / (mVal + n);
 		double spark = (double) (xmVal + n) / (xVal + n);
 		double ps = stick / spark;

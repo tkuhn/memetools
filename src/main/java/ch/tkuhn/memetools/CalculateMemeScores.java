@@ -161,7 +161,7 @@ public class CalculateMemeScores {
 		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
 		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 		List<String> line = csvReader.read();
-		int relFqCol = line.indexOf("RELFREQ");
+		int absFqCol = line.indexOf("ABSFREQ");
 		int mmCol = line.indexOf("MM");
 		int mCol = line.indexOf("M");
 		int xmCol = line.indexOf("XM");
@@ -176,8 +176,8 @@ public class CalculateMemeScores {
 			int m = Integer.parseInt(line.get(mCol));
 			int xm = Integer.parseInt(line.get(xmCol));
 			int x = Integer.parseInt(line.get(xCol));
-			double relFq = Double.parseDouble(line.get(relFqCol));
-			double[] v = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, relFq, n);
+			int absFq = Integer.parseInt(line.get(absFqCol));
+			double[] v = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, absFq, n);
 			for (double d : v) {
 				line.add(d + "");
 			}

@@ -36,8 +36,14 @@ public class CalculateHistory {
 	@Parameter(names = "-m", description = "Metric to use: 'ms' = meme score")
 	private String metric = "ms";
 
+	@Parameter(names = "-n", description = "Set n parameter")
+	private int n = 3;
+
 	@Parameter(names = "-o", description = "Output file")
 	private File outputFile;
+
+	@Parameter(names = "-v", description = "Write detailed log")
+	private boolean verbose = false;
 
 	private File logFile;
 
@@ -71,6 +77,8 @@ public class CalculateHistory {
 
 	private MemeScorer[] ms;
 	private List<String> terms;
+
+	private CsvListWriter csvWriter;
 
 	public void run() {
 		init();
@@ -118,27 +126,59 @@ public class CalculateHistory {
 		log("Processing data from " + inputFile + " and writing result to " + outputFile + " ...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
-		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 
 		List<String> outputHeader = new ArrayList<String>();
 		outputHeader.add("DATE");
 		for (String term : terms) outputHeader.add(term);
 		csvWriter.write(outputHeader);
 
-		int progress = 0;
+		int entryCount = 0;
+		int bin = 0;
 		String inputLine;
 		while ((inputLine = reader.readLine()) != null) {
-			progress++;
-			logProgress(progress);
+			logProgress(entryCount);
 			DataEntry d = new DataEntry(inputLine);
-			// TODO
+			ms[bin].recordTerms(d);
+			entryCount++;
+			bin = (entryCount % windowSize) / stepSize;
+			if (entryCount % stepSize == 0) {
+				// Current bin is full
+				if (entryCount >= windowSize) {
+					// All bins are full
+					writeLine(d.getDate());
+				}
+				logDetail("Start new bin " + bin + " (at entry " + entryCount + ")");
+				ms[bin].clear();
+			}
 		}
+		log(((entryCount - windowSize) / stepSize + 1) + " output entries written");
+		log((entryCount % stepSize) + " final input entries ignored");
 		reader.close();
 		csvWriter.close();
 	}
 
+	private void writeLine(String date) throws IOException {
+		List<String> outputLine = new ArrayList<String>();
+		outputLine.add(date);
+		for (String term : terms) {
+			int mmVal = 0, mVal = 0, xmVal = 0, xVal = 0, fVal = 0;
+			for (MemeScorer m : ms) {
+				mmVal += m.getMM(term);
+				mVal += m.getM(term);
+				xmVal += m.getXM(term);
+				xVal += m.getX(term);
+				fVal += m.getF(term);
+			}
+			double[] v = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n);
+			outputLine.add(v[3] + "");
+		}
+		csvWriter.write(outputLine);
+	}
+
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
+		basename = basename.replace("-chronologic", "");
 		String filename = "hi-" + metric + "-" + basename + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
@@ -149,6 +189,10 @@ public class CalculateHistory {
 
 	private void log(Object obj) {
 		MemeUtils.log(logFile, obj);
+	}
+
+	private void logDetail(Object obj) {
+		if (verbose) log(obj);
 	}
 
 }
