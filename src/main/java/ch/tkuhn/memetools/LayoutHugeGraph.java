@@ -101,6 +101,8 @@ public class LayoutHugeGraph {
 		log("Starting...");
 
 		points = new HashMap<String,Pair<Double,Double>>();
+		morePoints = new HashMap<String,Pair<Double,Double>>();
+
 		if (outputFile == null) {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 		}
