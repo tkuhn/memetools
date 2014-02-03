@@ -114,11 +114,11 @@ public class PrepareWosData {
 				errors++;
 				continue;
 			}
-			if (entry.refCount < rth) continue; 
-			if (entry.citCount < cth) continue; 
-			titles.put(entry.id, MemeUtils.normalize(entry.title));
-			years.put(entry.id, entry.year);
-			references.put(entry.id, entry.ref);
+			if (entry.getRefCount() < rth) continue; 
+			if (entry.getCitCount() < cth) continue; 
+			titles.put(entry.getId(), MemeUtils.normalize(entry.getTitle()));
+			years.put(entry.getId(), entry.getYear());
+			references.put(entry.getId(), entry.getRef());
 		}
 		reader.close();
 		log("Number of errors: " + errors);
@@ -217,17 +217,45 @@ public class PrepareWosData {
     // 13+noOfAuthors+noOfJournals references (non-delimited t9)
     // 14+noOfAuthors+noOfJournals citations (non-delimited t9)
 
-	private class WosEntry {
+	class WosEntry {
 
 		private boolean valid = false;
 
-		String id;
-		String title;
-		String year;
-		String ref;
-		String cit;
-		int refCount;
-		int citCount;
+		private String id;
+		private String title;
+		private String year;
+		private String ref;
+		private String cit;
+		private int refCount;
+		private int citCount;
+
+		String getId() {
+			return id;
+		}
+
+		String getTitle() {
+			return title;
+		}
+
+		String getYear() {
+			return year;
+		}
+
+		String getRef() {
+			return ref;
+		}
+
+		String getCit() {
+			return cit;
+		}
+
+		int getRefCount() {
+			return refCount;
+		}
+
+		int getCitCount() {
+			return citCount;
+		}
 
 		WosEntry(String line) {
 			String[] parts = line.split(";", -1);
