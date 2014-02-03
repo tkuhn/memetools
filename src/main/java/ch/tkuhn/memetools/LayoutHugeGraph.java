@@ -100,7 +100,6 @@ public class LayoutHugeGraph {
 		log("==========");
 		log("Starting...");
 
-		points = new HashMap<String,Pair<Double,Double>>();
 		morePoints = new HashMap<String,Pair<Double,Double>>();
 
 		if (outputFile == null) {
@@ -146,8 +145,8 @@ public class LayoutHugeGraph {
 				}
 			}
 		}
-		points.putAll(morePoints);
-		morePoints.clear();
+		points = morePoints;
+		morePoints = new HashMap<String,Pair<Double,Double>>();
 		if (id != null) {
 			errors++;
 			logDetail("No coordinates found for: " + id);
@@ -155,7 +154,6 @@ public class LayoutHugeGraph {
 		reader.close();
 		log("Number of errors: " + errors);
 	}
-
 
 	private void retrieveMorePoints(final int minConnections) throws IOException {
 		log("Retrieving points from " + rawWosDataDir + " with at least " + minConnections + " connections ...");
