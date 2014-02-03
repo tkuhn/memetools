@@ -109,7 +109,12 @@ public class PrepareWosData {
 		int errors = 0;
 		String line;
 		while ((line = reader.readLine()) != null) {
-			WosEntry entry = new WosEntry(line);
+			WosEntry entry;
+			if (verbose) {
+				entry = new WosEntry(line, logFile);
+			} else {
+				entry = new WosEntry(line);
+			}
 			if (!entry.isValid()) {
 				errors++;
 				continue;
@@ -131,16 +136,16 @@ public class PrepareWosData {
 		if (rth > 0) filename += "-r" + rth;
 		File file = new File(MemeUtils.getPreparedDataDir(), filename + ".txt");
 		BufferedWriter wT = new BufferedWriter(new FileWriter(file));
-		for (String doi1 : titles.keySet()) {
-			String text = titles.get(doi1);
-			String year = years.get(doi1);
-			DataEntry e = new DataEntry(doi1, year, text);
-			String refs = references.get(doi1);
+		for (String id1 : titles.keySet()) {
+			String text = titles.get(id1);
+			String year = years.get(id1);
+			DataEntry e = new DataEntry(id1, year, text);
+			String refs = references.get(id1);
 			while (!refs.isEmpty()) {
-				String doi2 = refs.substring(0, 9);
+				String id2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				if (titles.containsKey(doi2)) {
-					e.addCitedText(titles.get(doi2));
+				if (titles.containsKey(id2)) {
+					e.addCitedText(titles.get(id2));
 				}
 			}
 			wT.write(e.getLine() + "\n");
@@ -157,12 +162,12 @@ public class PrepareWosData {
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
-		for (String doi : titles.keySet()) {
-			String year = years.get(doi);
-			String text = titles.get(doi);
+		for (String id : titles.keySet()) {
+			String year = years.get(id);
+			String text = titles.get(id);
 			text = " " + text + " ";
 			w.write("node [\n");
-			w.write("id \"" + doi + "\"\n");
+			w.write("id \"" + id + "\"\n");
 			w.write("year \"" + year + "\"\n");
 			// TODO Make this general:
 			if (text.contains(" quantum ")) w.write("memeQuantum \"y\"\n");
@@ -171,15 +176,15 @@ public class PrepareWosData {
 			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
 			w.write("]\n");
 		}
-		for (String doi1 : references.keySet()) {
-			String refs = references.get(doi1);
+		for (String id1 : references.keySet()) {
+			String refs = references.get(id1);
 			while (!refs.isEmpty()) {
-				String doi2 = refs.substring(0, 9);
+				String id2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				if (titles.containsKey(doi2)) {
+				if (titles.containsKey(id2)) {
 					w.write("edge [\n");
-					w.write("source \"" + doi1 + "\"\n");
-					w.write("target \"" + doi2 + "\"\n");
+					w.write("source \"" + id1 + "\"\n");
+					w.write("target \"" + id2 + "\"\n");
 					w.write("]\n");
 				}
 			}
@@ -190,10 +195,6 @@ public class PrepareWosData {
 
 	private void log(Object obj) {
 		MemeUtils.log(logFile, obj);
-	}
-
-	private void logDetail(Object obj) {
-		if (verbose) log(obj);
 	}
 
 	
@@ -217,7 +218,7 @@ public class PrepareWosData {
     // 13+noOfAuthors+noOfJournals references (non-delimited t9)
     // 14+noOfAuthors+noOfJournals citations (non-delimited t9)
 
-	class WosEntry {
+	static class WosEntry {
 
 		private boolean valid = false;
 
@@ -228,6 +229,8 @@ public class PrepareWosData {
 		private String cit;
 		private int refCount;
 		private int citCount;
+
+		private File logFile;
 
 		String getId() {
 			return id;
@@ -258,39 +261,50 @@ public class PrepareWosData {
 		}
 
 		WosEntry(String line) {
+			this(line, null);
+		}
+
+		WosEntry(String line, File logFile) {
+			this.logFile = logFile;
 			String[] parts = line.split(";", -1);
 			if (parts.length < 15) {
-				logDetail("Invalid line: " + line);
+				log("Invalid line: " + line);
 				return;
 			}
 			id = parts[0];
 			if (!id.matches("[0-9]{9}")) {
-				logDetail("Invalid ID: " + id);
+				log("Invalid ID: " + id);
 				return;
 			}
 			year = parts[1];
 			if (!year.matches("[0-9]{4}")) {
-				logDetail("Invalid year: " + year);
+				log("Invalid year: " + year);
 				return;
 			}
 			title = parts[9];
 			if (title.isEmpty()) {
-				logDetail("Empty title for publication: " + id);
+				log("Empty title for publication: " + id);
 				return;
 			}
 			ref = parts[parts.length-2];
 			if (!ref.matches("([0-9]{9})*")) {
-				logDetail("Invalid references: " + ref);
+				log("Invalid references: " + ref);
 				return;
 			}
 			refCount = ref.length() / 9;
 			cit = parts[parts.length-1];
 			if (!cit.matches("([0-9]{9})*")) {
-				logDetail("Invalid citations: " + cit);
+				log("Invalid citations: " + cit);
 				return;
 			}
 			citCount = cit.length() / 9;
 			valid = true;
+		}
+
+		private void log(String text) {
+			if (logFile != null) {
+				MemeUtils.log(logFile, text);
+			}
 		}
 
 		boolean isValid() {
