@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
 
 import com.beust.jcommander.JCommander;
@@ -69,8 +67,8 @@ public class LayoutHugeGraph {
 
 	private static String wosFolder = "wos";
 
-	private Map<String,Pair<Double,Double>> points;
-	private Map<String,Pair<Double,Double>> morePoints;
+	private Map<String,Point> points;
+	private Map<String,Point> morePoints;
 	private int missingPoints;
 
 	private Random random;
@@ -100,7 +98,7 @@ public class LayoutHugeGraph {
 		log("==========");
 		log("Starting...");
 
-		morePoints = new HashMap<String,Pair<Double,Double>>();
+		morePoints = new HashMap<String,Point>();
 
 		if (outputFile == null) {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
@@ -138,15 +136,15 @@ public class LayoutHugeGraph {
 					errors++;
 					logDetail("No ID found for coordinates: " + line);
 				} else {
-					double posX = Double.parseDouble(line.replaceFirst(coordPattern, "$1"));
-					double posY = Double.parseDouble(line.replaceFirst(coordPattern, "$2"));
+					float posX = Float.parseFloat(line.replaceFirst(coordPattern, "$1"));
+					float posY = Float.parseFloat(line.replaceFirst(coordPattern, "$2"));
 					addPosition(id, posX, posY);
 					id = null;
 				}
 			}
 		}
 		points = morePoints;
-		morePoints = new HashMap<String,Pair<Double,Double>>();
+		morePoints = new HashMap<String,Point>();
 		if (id != null) {
 			errors++;
 			logDetail("No coordinates found for: " + id);
@@ -208,11 +206,11 @@ public class LayoutHugeGraph {
 				double sumX = 0;
 				double sumY = 0;
 				for (String n : neighbors) {
-					sumX += points.get(n).getLeft();
-					sumY += points.get(n).getRight();
+					sumX += points.get(n).x;
+					sumY += points.get(n).y;
 				}
-				double posX = sumX / neighbors.size() + random.nextGaussian() * noise;
-				double posY = sumY / neighbors.size() + random.nextGaussian() * noise;
+				float posX = (float) (sumX / neighbors.size() + random.nextGaussian() * noise);
+				float posY = (float) (sumY / neighbors.size() + random.nextGaussian() * noise);
 				addPosition(entry.getId(), posX, posY);
 			} else {
 				missingPoints++;
@@ -222,8 +220,8 @@ public class LayoutHugeGraph {
 		log("Number of errors: " + errors);
 	}
 
-	private void addPosition(String id, double posX, double posY) throws IOException {
-		morePoints.put(id, Pair.of(posX, posY));
+	private void addPosition(String id, float posX, float posY) throws IOException {
+		morePoints.put(id, new Point(posX, posY));
 		writer.write(id + "," + posX + "," + posY + "\n");
 	}
 
@@ -237,6 +235,18 @@ public class LayoutHugeGraph {
 
 	private void log(Object obj) {
 		MemeUtils.log(logFile, obj);
+	}
+
+
+	private static class Point {
+
+		float x, y;
+
+		Point(float x, float y) {
+			this.x = x;
+			this.y = y;
+		}
+
 	}
 
 }
