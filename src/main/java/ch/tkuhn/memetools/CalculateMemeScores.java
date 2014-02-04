@@ -94,7 +94,7 @@ public class CalculateMemeScores {
 		}
 
 		if (!appendMode) {
-			ms = new MemeScorer(true);
+			ms = new MemeScorer(MemeScorer.FAST_SCREEN_MODE);
 		}
 	}
 

@@ -5,7 +5,11 @@ import java.util.Map;
 
 public class MemeScorer {
 
-	private boolean screenMode;
+	public static final int FAST_SCREEN_MODE = 0;
+	public static final int DECOMPOSED_SCREEN_MODE = 1;
+	public static final int GIVEN_TERMLIST_MODE = 1;
+
+	private int mode;
 
 	private Map<String,Integer> f;
 
@@ -19,18 +23,18 @@ public class MemeScorer {
 
 	private Map<String,Boolean> terms;
 
-	public MemeScorer(boolean screenMode) {
+	public MemeScorer(int mode) {
 		init();
-		this.screenMode = screenMode;
+		this.mode = mode;
 		termBeginnings = new HashMap<String,Boolean>();
-		if (!screenMode) {
+		if (mode != FAST_SCREEN_MODE) {
 			terms = new HashMap<String,Boolean>();
 		}
 	}
 
-	public MemeScorer(MemeScorer termShareObject) {
+	public MemeScorer(MemeScorer termShareObject, int mode) {
 		init();
-		screenMode = false;
+		this.mode = mode;
 		terms = termShareObject.terms;
 		termBeginnings = termShareObject.termBeginnings;
 	}
@@ -119,13 +123,13 @@ public class MemeScorer {
 	}
 
 	public void screenTerms(DataEntry d) {
-		if (!screenMode) {
+		if (mode != FAST_SCREEN_MODE && mode != DECOMPOSED_SCREEN_MODE) {
 			throw new RuntimeException("Not in screen mode");
 		}
-		recordStickingTerms(d);
+		recordStickingTerms(d, true);
 	}
 
-	private void recordStickingTerms(DataEntry d) {
+	private void recordStickingTerms(DataEntry d, boolean screening) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String allCited = "";
 		for (String c : d.getCitedText()) allCited += "  " + c.trim();
@@ -138,15 +142,23 @@ public class MemeScorer {
 			for (int p2 = p1 ; p2 < tokens.length ; p2++) {
 				term += tokens[p2] + " ";
 				String t = term.trim();
+				if (!screening) {
+					if (ignoreTermsStartingWith(t)) break;
+					if (ignoreTerm(t)) continue;
+				}
 				String post = "   ";
 				if (p2 < tokens.length-1) post = tokens[p2+1] + " ";
 				if (processed.containsKey(t)) continue;
 				if (allCited.contains(term)) {
 					int c = countOccurrences(allCited, term);
 					if (countOccurrences(allCited, pre + term) < c && countOccurrences(allCited, term + post) < c) {
-						increaseMapEntry(mm, t);
+						if (mode == DECOMPOSED_SCREEN_MODE && screening) {
+							terms.put(t, true);
+						} else {
+							increaseMapEntry(mm, t);
+						}
 						processed.put(t, true);
-					} else if (screenMode) {
+					} else if (screening) {
 						termBeginnings.put(t, true);
 					}
 				} else {
@@ -157,7 +169,7 @@ public class MemeScorer {
 	}
 
 	public void addTerm(String term) {
-		if (screenMode) {
+		if (mode != GIVEN_TERMLIST_MODE) {
 			throw new RuntimeException("In screen mode");
 		}
 		terms.put(term, true);
@@ -183,8 +195,8 @@ public class MemeScorer {
 
 	public void recordTerms(DataEntry d) {
 		t++;
-		if (!screenMode) {
-			recordStickingTerms(d);
+		if (mode != FAST_SCREEN_MODE) {
+			recordStickingTerms(d, false);
 		}
 		// Record terms from citing article:
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
@@ -227,7 +239,7 @@ public class MemeScorer {
 	}
 
 	private boolean ignoreTermsStartingWith(String term) {
-		if (screenMode) {
+		if (mode == FAST_SCREEN_MODE) {
 			return !mm.containsKey(term) && !termBeginnings.containsKey(term);
 		} else {
 			return !terms.containsKey(term) && !termBeginnings.containsKey(term);
@@ -235,7 +247,7 @@ public class MemeScorer {
 	}
 
 	private boolean ignoreTerm(String term) {
-		if (screenMode) {
+		if (mode == FAST_SCREEN_MODE) {
 			return !mm.containsKey(term);
 		} else {
 			return !terms.containsKey(term);

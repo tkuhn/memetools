@@ -9,14 +9,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-public class CalculateHistory {
+public class CalculateTopHistory {
 
 	@Parameter(description = "chronologically-sorted-input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
@@ -31,18 +30,6 @@ public class CalculateHistory {
 
 	private int stepsPerWindow;
 
-	@Parameter(names = "-t", description = "File with terms", required = true)
-	private File termsFile;
-
-	@Parameter(names = "-tcol", description = "Index or name of column to read terms (if term file is in CSV format)")
-	private String termCol = "TERM";
-
-	@Parameter(names = "-c", description = "Only use first c terms")
-	private int termCount = -1;
-
-	@Parameter(names = "-m", description = "Metric to use: 'ms' = meme score")
-	private String metric = "ms";
-
 	@Parameter(names = "-n", description = "Set n parameter")
 	private int n = 3;
 
@@ -55,7 +42,7 @@ public class CalculateHistory {
 	private File logFile;
 
 	public static final void main(String[] args) {
-		CalculateHistory obj = new CalculateHistory();
+		CalculateTopHistory obj = new CalculateTopHistory();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -83,15 +70,18 @@ public class CalculateHistory {
 	}
 
 	private MemeScorer[] ms;
-	private List<String> terms;
-
-	private CsvListWriter csvWriter;
+	private List<String> topMemes;
+	private List<Double> secondScoreTimeline;
+	private List<Double> firstScoreTimeline;
+	private List<String> topMemeTimeline;
 
 	public void run() {
 		init();
 		try {
-			readTerms();
-			processAndWriteData();
+			extractTerms();
+			processData();
+			ms = null;  // free for garbage collection
+			writeOutput();
 		} catch (Throwable th) {
 			log(th);
 			System.exit(1);
@@ -109,99 +99,66 @@ public class CalculateHistory {
 
 		stepsPerWindow = windowSize / stepSize;
 		ms = new MemeScorer[stepsPerWindow];
-		ms[0] = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
+		ms[0] = new MemeScorer(MemeScorer.DECOMPOSED_SCREEN_MODE);
 		for (int i = 1 ; i < stepsPerWindow ; i++) {
-			ms[i] = new MemeScorer(ms[0], MemeScorer.GIVEN_TERMLIST_MODE);
+			ms[i] = new MemeScorer(ms[0], MemeScorer.DECOMPOSED_SCREEN_MODE);
 		}
-		terms = new ArrayList<String>();
+
+		topMemes = new ArrayList<String>();
+		secondScoreTimeline = new ArrayList<Double>();
+		firstScoreTimeline = new ArrayList<Double>();
+		topMemeTimeline = new ArrayList<String>();
 	}
 
-	private void readTerms() throws IOException {
-		log("Reading terms from " + termsFile + " ...");
-		if (termsFile.toString().endsWith(".csv")) {
-			readTermsCsv();
-		} else {
-			readTermsTxt();
-		}
-		log("Number of terms: " + terms.size());
-	}
-
-	private void readTermsTxt() throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(termsFile));
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String term = MemeUtils.normalize(line);
-			ms[0].addTerm(term);
-			terms.add(term);
-			if (termCount >= 0 && terms.size() >= termCount) {
-				break;
-			}
-		}
-		reader.close();
-	}
-
-	private void readTermsCsv() throws IOException {
-		BufferedReader r = new BufferedReader(new FileReader(termsFile));
-		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
-		List<String> header = csvReader.read();
-		int col;
-		if (termCol.matches("[0-9]+")) {
-			col = Integer.parseInt(termCol);
-		} else {
-			col = header.indexOf(termCol);
-		}
-		List<String> line;
-		while ((line = csvReader.read()) != null) {
-			String term = MemeUtils.normalize(line.get(col));
-			ms[0].addTerm(term);
-			terms.add(term);
-			if (termCount >= 0 && terms.size() >= termCount) {
-				break;
-			}
-		}
-		csvReader.close();
-	}
-
-	private void processAndWriteData() throws IOException {
-		log("Processing data from " + inputFile + " and writing result to " + outputFile + " ...");
+	private void extractTerms() throws IOException {
+		log("Extract terms from " + inputFile + " ...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
-		csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-
-		List<String> outputHeader = new ArrayList<String>();
-		outputHeader.add("DATE");
-		for (String term : terms) outputHeader.add(term);
-		csvWriter.write(outputHeader);
-
 		int entryCount = 0;
-		int bin = 0;
 		String inputLine;
 		while ((inputLine = reader.readLine()) != null) {
 			logProgress(entryCount);
 			DataEntry d = new DataEntry(inputLine);
-			ms[bin].recordTerms(d);
+			ms[0].screenTerms(d);
 			entryCount++;
-			bin = (entryCount % windowSize) / stepSize;
-			if (entryCount % stepSize == 0) {
+		}
+		log("Number of terms extracted: " + ms[0].getTerms().size());
+		reader.close();
+	}
+
+	private void processData() throws IOException {
+		log("Processing data from " + inputFile + " and writing result to " + outputFile + " ...");
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+		int inputEntryCount = 0;
+		int outputEntryCount = 0;
+		int bin = 0;
+		String inputLine;
+		while ((inputLine = reader.readLine()) != null) {
+			logProgress(inputEntryCount);
+			DataEntry d = new DataEntry(inputLine);
+			ms[bin].recordTerms(d);
+			inputEntryCount++;
+			bin = (inputEntryCount % windowSize) / stepSize;
+			if (inputEntryCount % stepSize == 0) {
 				// Current bin is full
-				if (entryCount >= windowSize) {
+				if (inputEntryCount >= windowSize) {
 					// All bins are full
-					writeLine(d.getDate());
+					makeOutputEntry(outputEntryCount);
+					outputEntryCount++;
 				}
-				logDetail("Start new bin " + bin + " (at entry " + entryCount + ")");
+				logDetail("Start new bin " + bin + " (at entry " + inputEntryCount + ")");
 				ms[bin].clear();
 			}
 		}
-		log(((entryCount - windowSize) / stepSize + 1) + " output entries written");
-		log((entryCount % stepSize) + " final input entries ignored");
+		log(outputEntryCount + " output entries written");
+		log((inputEntryCount % stepSize) + " final input entries ignored");
 		reader.close();
-		csvWriter.close();
 	}
 
-	private void writeLine(String date) throws IOException {
-		List<String> outputLine = new ArrayList<String>();
-		outputLine.add(date);
-		for (String term : terms) {
+	private void makeOutputEntry(int count) {
+		String firstTerm = null;
+		double firstScore = -1.0;
+		double secondScore = -1.0;
+		for (String term : ms[0].getTerms().keySet()) {
 			int mmVal = 0, mVal = 0, xmVal = 0, xVal = 0, fVal = 0;
 			for (MemeScorer m : ms) {
 				mmVal += m.getMM(term);
@@ -210,16 +167,53 @@ public class CalculateHistory {
 				xVal += m.getX(term);
 				fVal += m.getF(term);
 			}
-			double[] v = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n);
-			outputLine.add(v[3] + "");
+			double score = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n)[3];
+			if (score > firstScore) {
+				secondScore = firstScore;
+				firstScore = score;
+				firstTerm = term;
+			} else if (score > secondScore) {
+				secondScore = score;
+			}
 		}
-		csvWriter.write(outputLine);
+		if (!topMemes.contains(firstTerm)) {
+			topMemes.add(firstTerm);
+		}
+		topMemeTimeline.add(firstTerm);
+		firstScoreTimeline.add(firstScore);
+		secondScoreTimeline.add(secondScore);
+	}
+
+	private void writeOutput() throws IOException {
+		log("Writing result to " + outputFile + " ...");
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+
+		List<String> line = new ArrayList<String>();
+		line.add("SECOND");
+		for (String term : topMemes) line.add(term);
+		csvWriter.write(line);
+
+		for (int i = 0 ; i < topMemeTimeline.size() ; i++) {
+			line = new ArrayList<String>();
+			line.add(secondScoreTimeline.get(i) + "");
+			for (String term : topMemes) {
+				if (term.equals(topMemeTimeline.get(i))) {
+					line.add((firstScoreTimeline.get(i) - secondScoreTimeline.get(i)) + "");
+				} else {
+					line.add("0");
+				}
+			}
+			csvWriter.write(line);
+		}
+
+		csvWriter.close();
 	}
 
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
-		String filename = "hi-" + metric + "-" + basename + "-w" + windowSize + "-s" + stepSize;
+		String filename = "hi-topms-" + basename + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
 
