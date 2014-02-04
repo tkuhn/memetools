@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.supercsv.io.CsvListReader;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -27,6 +29,27 @@ public class PrepareApsData {
 
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
+
+	@Parameter(names = "-t", description = "File with terms")
+	private File termsFile;
+
+	@Parameter(names = "-tcol", description = "Index or name of column to read terms (if term file is in CSV format)")
+	private String termCol = "TERM";
+
+	@Parameter(names = "-c", description = "Only use first c terms")
+	private int termCount = -1;
+
+	@Parameter(names = "-sg", description = "Skip GML file generation")
+	private boolean skipGml = false;
+
+	@Parameter(names = "-sd", description = "Skip data file generation")
+	private boolean skipData = false;
+
+	@Parameter(names = "-sdt", description = "Skip generation of title-only data file")
+	private boolean skipDataT = false;
+
+	@Parameter(names = "-sdta", description = "Skip generation of title+abstract data file")
+	private boolean skipDataTA = false;
 
 	private File logFile;
 
@@ -51,6 +74,8 @@ public class PrepareApsData {
 	private Map<String,String> abstracts;
 	private Map<String,List<String>> references;
 
+	private List<String> terms;
+
 	private Set<FileVisitOption> walkFileTreeOptions;
 
 	public PrepareApsData() {
@@ -62,6 +87,7 @@ public class PrepareApsData {
 			processMetadataDir();
 			processAbstractDir();
 			processCitationFile();
+			readTerms();
 			writeDataFiles();
 			writeGmlFile();
 		} catch (Throwable th) {
@@ -80,6 +106,8 @@ public class PrepareApsData {
 		dates = new HashMap<String,String>();
 		abstracts = new HashMap<String,String>();
 		references = new HashMap<String,List<String>>();
+
+		terms = null;
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
@@ -225,13 +253,62 @@ public class PrepareApsData {
 		log("Missing publications: " + missing);
 	}
 
+	private void readTerms() throws IOException {
+		if (termsFile == null) return;
+		log("Reading terms from " + termsFile + " ...");
+		terms = new ArrayList<String>();
+		if (termsFile.toString().endsWith(".csv")) {
+			readTermsCsv();
+		} else {
+			readTermsTxt();
+		}
+		log("Number of terms: " + terms.size());
+	}
+
+	private void readTermsTxt() throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(termsFile));
+		String line;
+		while ((line = reader.readLine()) != null) {
+			String term = MemeUtils.normalize(line);
+			terms.add(term);
+			if (termCount >= 0 && terms.size() >= termCount) {
+				break;
+			}
+		}
+		reader.close();
+	}
+
+	private void readTermsCsv() throws IOException {
+		BufferedReader r = new BufferedReader(new FileReader(termsFile));
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> header = csvReader.read();
+		int col;
+		if (termCol.matches("[0-9]+")) {
+			col = Integer.parseInt(termCol);
+		} else {
+			col = header.indexOf(termCol);
+		}
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			String term = MemeUtils.normalize(line.get(col));
+			terms.add(term);
+			if (termCount >= 0 && terms.size() >= termCount) {
+				break;
+			}
+		}
+		csvReader.close();
+	}
+
 	private void writeDataFiles() throws IOException {
+		if (skipData) return;
 		log("Writing data files...");
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T.txt");
 		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA.txt");
 		int noAbstracts = 0;
-		BufferedWriter wT = new BufferedWriter(new FileWriter(fileT));
-		BufferedWriter wTA = new BufferedWriter(new FileWriter(fileTA));
+		BufferedWriter wT = null;
+		BufferedWriter wTA = null;
+		if (!skipDataT) wT = new BufferedWriter(new FileWriter(fileT));
+		if (!skipDataTA) wTA = new BufferedWriter(new FileWriter(fileTA));
 		for (String doi1 : titles.keySet()) {
 			String text = titles.get(doi1);
 			String date = dates.get(doi1);
@@ -244,35 +321,43 @@ public class PrepareApsData {
 				if (abstracts.containsKey(doi2)) text += " " + abstracts.get(doi2);
 				eTA.addCitedText(text);
 			}
-			wT.write(eT.getLine() + "\n");
-			wTA.write(eTA.getLine() + "\n");
+			if (!skipDataT) wT.write(eT.getLine() + "\n");
+			if (!skipDataTA) wTA.write(eTA.getLine() + "\n");
 		}
-		wT.close();
-		wTA.close();
+		if (!skipDataT) wT.close();
+		if (!skipDataTA) wTA.close();
 		log("No abstracts: " + noAbstracts);
 	}
 
 	private void writeGmlFile() throws IOException {
+		if (skipGml) return;
 		log("Writing GML file...");
 		File file = new File(MemeUtils.getPreparedDataDir(), "aps.gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
+		if (terms != null) {
+			for (int i = 0; i < terms.size(); i++) {
+				w.write("comment \"meme" + i + ": " + terms.get(i).replace("\"", "") + "\"");
+			}
+		}
 		for (String doi : titles.keySet()) {
 			String year = dates.get(doi).substring(0, 4);
 			String journal = doi.replaceFirst("^10\\.[0-9]+/([^.]+).*$", "$1");
-			String text = titles.get(doi);
-			if (abstracts.containsKey(doi)) text += " " + abstracts.get(doi);
-			text = " " + text + " ";
 			w.write("node [\n");
 			w.write("id \"" + doi + "\"\n");
 			w.write("journal \"" + journal + "\"\n");
 			w.write("year \"" + year + "\"\n");
-			// TODO Make this general:
-			if (text.contains(" quantum ")) w.write("memeQuantum \"y\"\n");
-			if (text.contains(" traffic ")) w.write("memeTraffic \"y\"\n");
-			if (text.contains(" black hole ")) w.write("memeBlackHole \"y\"\n");
-			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
+			if (terms != null) {
+				String text = titles.get(doi);
+				if (abstracts.containsKey(doi)) text += " " + abstracts.get(doi);
+				text = " " + text + " ";
+				for (int i = 0; i < terms.size(); i++) {
+					if (text.contains(" " + terms.get(i) + " ")) {
+						w.write("meme" + i + " 1\n");
+					}
+				}
+			}
 			w.write("]\n");
 		}
 		for (String doi1 : references.keySet()) {
