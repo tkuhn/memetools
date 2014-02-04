@@ -179,8 +179,19 @@ public class LayoutHugeGraph {
 		int errors = 0;
 		String line;
 		while ((line = reader.readLine()) != null) {
-			WosEntry entry = new WosEntry(line);
+			WosEntry entry;
+			if (verbose) {
+				entry = new WosEntry(line, logFile);
+			} else {
+				entry = new WosEntry(line);
+			}
 			if (!entry.isValid()) {
+				errors++;
+				continue;
+			}
+			if (points.containsKey(entry.getId())) continue;
+			if (morePoints.containsKey(entry.getId())) {
+				logDetail("Duplicate id: " + entry.getId());
 				errors++;
 				continue;
 			}
