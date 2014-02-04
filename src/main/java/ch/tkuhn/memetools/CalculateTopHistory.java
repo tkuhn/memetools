@@ -126,7 +126,7 @@ public class CalculateTopHistory {
 	}
 
 	private void processData() throws IOException {
-		log("Processing data from " + inputFile + " and writing result to " + outputFile + " ...");
+		log("Processing data from " + inputFile + " ...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		int inputEntryCount = 0;
 		int outputEntryCount = 0;
@@ -149,7 +149,7 @@ public class CalculateTopHistory {
 				ms[bin].clear();
 			}
 		}
-		log(outputEntryCount + " output entries written");
+		log(outputEntryCount + " output entries created");
 		log((inputEntryCount % stepSize) + " final input entries ignored");
 		reader.close();
 	}
