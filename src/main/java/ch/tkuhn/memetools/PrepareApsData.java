@@ -338,7 +338,7 @@ public class PrepareApsData {
 		w.write("directed 1\n");
 		if (terms != null) {
 			for (int i = 0; i < terms.size(); i++) {
-				w.write("comment \"meme" + i + ": " + terms.get(i).replace("\"", "") + "\"");
+				w.write("comment \"meme" + i + ": " + terms.get(i).replace("\"", "") + "\"\n");
 			}
 		}
 		for (String doi : titles.keySet()) {
