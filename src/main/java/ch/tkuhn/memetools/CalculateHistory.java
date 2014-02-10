@@ -108,6 +108,8 @@ public class CalculateHistory {
 			ms[i] = new MemeScorer(ms[0], MemeScorer.GIVEN_TERMLIST_MODE);
 		}
 		terms = new ArrayList<String>();
+
+		csvWriters = new ArrayList<CsvListWriter>();
 	}
 
 	private void readTerms() throws IOException {
@@ -160,7 +162,8 @@ public class CalculateHistory {
 		log("Processing data from " + inputFile + " and writing result to output files...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		for (String metric : metrics.split(",")) {
-			BufferedWriter w = new BufferedWriter(new FileWriter(getOutputFileName(metric) + ".csv"));
+			File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName(metric) + ".csv");
+			BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
 			csvWriters.add(new CsvListWriter(w, MemeUtils.getCsvPreference()));
 		}
 
