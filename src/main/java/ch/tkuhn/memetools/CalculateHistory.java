@@ -40,14 +40,12 @@ public class CalculateHistory {
 	@Parameter(names = "-c", description = "Only use first c terms")
 	private int termCount = -1;
 
-	@Parameter(names = "-m", description = "Metric to use: 'ms' = meme score")
-	private String metric = "ms";
+	@Parameter(names = "-m", description = "Metrics to use (comma separated): 'ms' = meme score, " +
+			"'ps' = propagation score, 'st' = sticking factor, 'sp' = sparking factor, 'af' = absolute frequency")
+	private String metrics = "ms";
 
 	@Parameter(names = "-n", description = "Set n parameter")
 	private int n = 3;
-
-	@Parameter(names = "-o", description = "Output file")
-	private File outputFile;
 
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
@@ -85,7 +83,7 @@ public class CalculateHistory {
 	private MemeScorer[] ms;
 	private List<String> terms;
 
-	private CsvListWriter csvWriter;
+	private List<CsvListWriter> csvWriters;
 
 	public void run() {
 		init();
@@ -100,12 +98,8 @@ public class CalculateHistory {
 	}
 
 	private void init() {
-		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
+		logFile = new File(MemeUtils.getLogDir(), getOutputFileName(metrics) + ".log");
 		log("==========");
-
-		if (outputFile == null) {
-			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		}
 
 		stepsPerWindow = windowSize / stepSize;
 		ms = new MemeScorer[stepsPerWindow];
@@ -163,15 +157,19 @@ public class CalculateHistory {
 	}
 
 	private void processAndWriteData() throws IOException {
-		log("Processing data from " + inputFile + " and writing result to " + outputFile + " ...");
+		log("Processing data from " + inputFile + " and writing result to output files...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
-		csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		for (String metric : metrics.split(",")) {
+			BufferedWriter w = new BufferedWriter(new FileWriter(getOutputFileName(metric) + ".csv"));
+			csvWriters.add(new CsvListWriter(w, MemeUtils.getCsvPreference()));
+		}
 
 		List<String> outputHeader = new ArrayList<String>();
 		outputHeader.add("DATE");
 		for (String term : terms) outputHeader.add(term);
-		csvWriter.write(outputHeader);
+		for (CsvListWriter csvWriter : csvWriters) {
+			csvWriter.write(outputHeader);
+		}
 
 		int entryCount = 0;
 		int bin = 0;
@@ -195,10 +193,19 @@ public class CalculateHistory {
 		log(((entryCount - windowSize) / stepSize + 1) + " output entries written");
 		log((entryCount % stepSize) + " final input entries ignored");
 		reader.close();
-		csvWriter.close();
+		for (CsvListWriter csvWriter : csvWriters) {
+			csvWriter.close();
+		}
 	}
 
 	private void writeLine(String date) throws IOException {
+		List<List<String>> outputLines = new ArrayList<List<String>>();
+		String[] metricsArray = metrics.split(",");
+		for (int i = 0 ; i < metricsArray.length ; i++) {
+			List<String> outputLine = new ArrayList<String>();
+			outputLine.add(date);
+			outputLines.add(outputLine);
+		}
 		List<String> outputLine = new ArrayList<String>();
 		outputLine.add(date);
 		for (String term : terms) {
@@ -211,12 +218,27 @@ public class CalculateHistory {
 				fVal += m.getF(term);
 			}
 			double[] v = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n);
-			outputLine.add(v[3] + "");
+			for (int i = 0 ; i < metricsArray.length ; i++) {
+				String metric = metricsArray[i];
+				if (metric.equals("st")) {
+					outputLines.get(i).add(v[0] + "");
+				} else if (metric.equals("sp")) {
+					outputLines.get(i).add(v[1] + "");
+				} else if (metric.equals("ps")) {
+					outputLines.get(i).add(v[2] + "");
+				} else if (metric.equals("ms")) {
+					outputLines.get(i).add(v[3] + "");
+				} else if (metric.equals("af")) {
+					outputLines.get(i).add(fVal + "");
+				}
+			}
 		}
-		csvWriter.write(outputLine);
+		for (int i = 0 ; i < metricsArray.length ; i++) {
+			csvWriters.get(i).write(outputLines.get(i));
+		}
 	}
 
-	private String getOutputFileName() {
+	private String getOutputFileName(String metric) {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
 		String filename = "hi-" + metric + "-" + basename + "-w" + windowSize + "-s" + stepSize;
