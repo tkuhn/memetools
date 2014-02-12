@@ -13,10 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -67,8 +65,8 @@ public class LayoutHugeGraph {
 
 	private static String wosFolder = "wos";
 
-	private Map<String,Point> points;
-	private Map<String,Point> morePoints;
+	private float[] pointsX;
+	private float[] pointsY;
 	private int missingPoints;
 
 	private Random random;
@@ -98,7 +96,8 @@ public class LayoutHugeGraph {
 		log("==========");
 		log("Starting...");
 
-		morePoints = new HashMap<String,Point>();
+		pointsX = new float[150000000];
+		pointsY = new float[150000000];
 
 		if (outputFile == null) {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
@@ -143,8 +142,8 @@ public class LayoutHugeGraph {
 				}
 			}
 		}
-		points = morePoints;
-		morePoints = new HashMap<String,Point>();
+//		points = morePoints;
+//		morePoints = new HashMap<String,Point>();
 		if (id != null) {
 			errors++;
 			logDetail("No coordinates found for: " + id);
@@ -165,10 +164,10 @@ public class LayoutHugeGraph {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-		log("Additinal points found: " + morePoints.size());
+//		log("Additinal points found: " + morePoints.size());
 		log("Points still missing: " + missingPoints);
-		points.putAll(morePoints);
-		morePoints.clear();
+//		points.putAll(morePoints);
+//		morePoints.clear();
 	}
 
 	private void retrieveMorePoints(Path path, int minConnections) throws IOException {
@@ -187,27 +186,24 @@ public class LayoutHugeGraph {
 				errors++;
 				continue;
 			}
-			if (points.containsKey(entry.getId())) continue;
-			if (morePoints.containsKey(entry.getId())) {
-				logDetail("Duplicate id: " + entry.getId());
-				errors++;
-				continue;
-			}
-			Set<String> neighbors = new HashSet<String>();
+			int idInt = Integer.parseInt(entry.getId());
+			if (pointsX[idInt] != 0) continue;
+			Set<Integer> neighbors = new HashSet<Integer>();
 			String neighborIds = entry.getRef() + entry.getCit();
 			while (!neighborIds.isEmpty()) {
-				String id = neighborIds.substring(0, 9);
+				String nId = neighborIds.substring(0, 9);
+				int nIdInt = Integer.parseInt(nId);
 				neighborIds = neighborIds.substring(9);
-				if (points.containsKey(id)) {
-					neighbors.add(id);
+				if (pointsX[nIdInt] != 0) {
+					neighbors.add(nIdInt);
 				}
 			}
 			if (neighbors.size() >= minConnections) {
 				double sumX = 0;
 				double sumY = 0;
-				for (String n : neighbors) {
-					sumX += points.get(n).x;
-					sumY += points.get(n).y;
+				for (int n : neighbors) {
+					sumX += pointsX[n];
+					sumY += pointsY[n];
 				}
 				float posX = (float) (sumX / neighbors.size() + random.nextGaussian() * noise);
 				float posY = (float) (sumY / neighbors.size() + random.nextGaussian() * noise);
@@ -221,7 +217,7 @@ public class LayoutHugeGraph {
 	}
 
 	private void addPosition(String id, float posX, float posY) throws IOException {
-		morePoints.put(id, new Point(posX, posY));
+//		morePoints.put(id, new Point(posX, posY));
 		writer.write(id + "," + posX + "," + posY + "\n");
 	}
 
@@ -238,15 +234,15 @@ public class LayoutHugeGraph {
 	}
 
 
-	private static class Point {
-
-		float x, y;
-
-		Point(float x, float y) {
-			this.x = x;
-			this.y = y;
-		}
-
-	}
+//	private static class Point {
+//
+//		float x, y;
+//
+//		Point(float x, float y) {
+//			this.x = x;
+//			this.y = y;
+//		}
+//
+//	}
 
 }
