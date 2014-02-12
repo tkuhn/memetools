@@ -43,6 +43,9 @@ public class LayoutHugeGraph {
 	@Parameter(names = "-n", description = "Noise level (standard deviation of Gaussian distribution)")
 	private double noise = 5.0;
 
+	@Parameter(names = "-o", description = "Offset to make all values positive")
+	private float offset = 10000;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -67,7 +70,10 @@ public class LayoutHugeGraph {
 
 	private float[] pointsX;
 	private float[] pointsY;
+	private float[] morePointsX;
+	private float[] morePointsY;
 	private int missingPoints;
+	private int additionalPoints;
 
 	private Random random;
 	private BufferedWriter writer;
@@ -96,8 +102,8 @@ public class LayoutHugeGraph {
 		log("==========");
 		log("Starting...");
 
-		pointsX = new float[150000000];
-		pointsY = new float[150000000];
+		morePointsX = new float[150000000];
+		morePointsY = new float[150000000];
 
 		if (outputFile == null) {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
@@ -137,13 +143,15 @@ public class LayoutHugeGraph {
 				} else {
 					float posX = Float.parseFloat(line.replaceFirst(coordPattern, "$1"));
 					float posY = Float.parseFloat(line.replaceFirst(coordPattern, "$2"));
-					addPosition(id, posX, posY);
+					addPosition(id, posX + offset, posY + offset);
 					id = null;
 				}
 			}
 		}
-//		points = morePoints;
-//		morePoints = new HashMap<String,Point>();
+		pointsX = morePointsX;
+		pointsY = morePointsY;
+		morePointsX = new float[150000000];
+		morePointsY = new float[150000000];
 		if (id != null) {
 			errors++;
 			logDetail("No coordinates found for: " + id);
@@ -155,6 +163,7 @@ public class LayoutHugeGraph {
 	private void retrieveMorePoints(final int minConnections) throws IOException {
 		log("Retrieving points from " + rawWosDataDir + " with at least " + minConnections + " connections ...");
 		missingPoints = 0;
+		additionalPoints = 0;
 		Files.walkFileTree(rawWosDataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -164,10 +173,14 @@ public class LayoutHugeGraph {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-//		log("Additinal points found: " + morePoints.size());
+		log("Additinal points found: " + additionalPoints);
 		log("Points still missing: " + missingPoints);
-//		points.putAll(morePoints);
-//		morePoints.clear();
+		for (int i = 0 ; i < morePointsX.length ; i++) {
+			pointsX[i] += morePointsX[i];
+			morePointsX[i] = 0;
+			pointsY[i] += morePointsY[i];
+			morePointsY[i] = 0;
+		}
 	}
 
 	private void retrieveMorePoints(Path path, int minConnections) throws IOException {
@@ -186,8 +199,12 @@ public class LayoutHugeGraph {
 				errors++;
 				continue;
 			}
-			int idInt = Integer.parseInt(entry.getId());
-			if (pointsX[idInt] != 0) continue;
+			if (pointsX[entry.getIdInt()] != 0) continue;
+			if (morePointsX[entry.getIdInt()] != 0) {
+				logDetail("Duplicate id: " + entry.getId());
+				errors++;
+				continue;
+			}
 			Set<Integer> neighbors = new HashSet<Integer>();
 			String neighborIds = entry.getRef() + entry.getCit();
 			while (!neighborIds.isEmpty()) {
@@ -207,7 +224,8 @@ public class LayoutHugeGraph {
 				}
 				float posX = (float) (sumX / neighbors.size() + random.nextGaussian() * noise);
 				float posY = (float) (sumY / neighbors.size() + random.nextGaussian() * noise);
-				addPosition(entry.getId(), posX, posY);
+				addPosition(entry, posX, posY);
+				additionalPoints++;
 			} else {
 				missingPoints++;
 			}
@@ -216,8 +234,18 @@ public class LayoutHugeGraph {
 		log("Number of errors: " + errors);
 	}
 
-	private void addPosition(String id, float posX, float posY) throws IOException {
-//		morePoints.put(id, new Point(posX, posY));
+	private void addPosition(Object obj, float posX, float posY) throws IOException {
+		String id;
+		int idInt;
+		if (obj instanceof WosEntry) {
+			id = ((WosEntry) obj).getId();
+			idInt = ((WosEntry) obj).getIdInt();
+		} else {
+			id = obj.toString();
+			idInt = Integer.parseInt(id);
+		}
+		morePointsX[idInt] = posX;
+		morePointsY[idInt] = posY;
 		writer.write(id + "," + posX + "," + posY + "\n");
 	}
 
@@ -232,17 +260,5 @@ public class LayoutHugeGraph {
 	private void log(Object obj) {
 		MemeUtils.log(logFile, obj);
 	}
-
-
-//	private static class Point {
-//
-//		float x, y;
-//
-//		Point(float x, float y) {
-//			this.x = x;
-//			this.y = y;
-//		}
-//
-//	}
 
 }

@@ -223,6 +223,7 @@ public class PrepareWosData {
 		private boolean valid = false;
 
 		private String id;
+		private Integer idInt;
 		private String title;
 		private String year;
 		private String ref;
@@ -234,6 +235,13 @@ public class PrepareWosData {
 
 		String getId() {
 			return id;
+		}
+
+		int getIdInt() {
+			if (idInt == null) {
+				idInt = Integer.parseInt(id);
+			}
+			return idInt;
 		}
 
 		String getTitle() {
