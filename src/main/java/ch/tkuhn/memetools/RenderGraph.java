@@ -103,11 +103,14 @@ public class RenderGraph {
 		graphics.setColor(new Color(0, 0, 255, 16));
 		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		int progress = 0;
 		List<String> line;
 		while ((line = csvReader.read()) != null) {
+			logProgress(progress);
+			progress++;
 			float x = Float.parseFloat(line.get(1));
 			float y = Float.parseFloat(line.get(2));
-			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (y*scale - dotSize/2.0), dotSize, dotSize);
+			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale + dotSize/2.0), dotSize, dotSize);
 		}
 		csvReader.close();
 	}
@@ -127,6 +130,10 @@ public class RenderGraph {
 
 	private void log(Object obj) {
 		MemeUtils.log(logFile, obj);
+	}
+
+	private void logProgress(int p) {
+		if (p % 1000000 == 0) log(p + "...");
 	}
 
 }

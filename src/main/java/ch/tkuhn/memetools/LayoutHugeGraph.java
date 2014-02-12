@@ -86,6 +86,10 @@ public class LayoutHugeGraph {
 		try {
 			init();
 			readBasePoints();
+			retrieveMorePoints(10);
+			retrieveMorePoints(8);
+			retrieveMorePoints(6);
+			retrieveMorePoints(4);
 			retrieveMorePoints(3);
 			retrieveMorePoints(2);
 			retrieveMorePoints(1);
