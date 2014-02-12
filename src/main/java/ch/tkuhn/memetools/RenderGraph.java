@@ -1,6 +1,7 @@
 package ch.tkuhn.memetools;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,7 +38,7 @@ public class RenderGraph {
 	private float scale = 0.5f;
 
 	@Parameter(names = "-ds", description = "Size of dots")
-	private int dotSize = 5;
+	private int dotSize = 4;
 
 	private File logFile;
 
@@ -62,6 +63,7 @@ public class RenderGraph {
 	private static String wosFolder = "wos";
 
 	private BufferedImage image;
+	private Graphics graphics;
 
 	public RenderGraph() {
 	}
@@ -91,18 +93,21 @@ public class RenderGraph {
 			rawWosDataDir = new File(MemeUtils.getRawDataDir(), wosFolder);
 		}
 		image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+		graphics = image.getGraphics();
 	}
 
 	private void processNodes() throws IOException {
-		log("Reading base points from gext file: " + inputFile);
-		image.getGraphics().setColor(new Color(255,0,0,16));
+		log("Processing nodes from input file: " + inputFile);
+		graphics.setColor(Color.WHITE);
+		graphics.fillRect(0, 0, size, size);
+		graphics.setColor(new Color(0, 0, 255, 16));
 		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
 		List<String> line;
 		while ((line = csvReader.read()) != null) {
 			float x = Float.parseFloat(line.get(1));
 			float y = Float.parseFloat(line.get(2));
-			image.getGraphics().fillOval((int) (x*scale - dotSize/2.0), (int) (y*scale - dotSize/2.0), dotSize, dotSize);
+			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (y*scale - dotSize/2.0), dotSize, dotSize);
 		}
 		csvReader.close();
 	}
