@@ -43,7 +43,7 @@ public class LayoutHugeGraph {
 	@Parameter(names = "-n", description = "Noise level (standard deviation of Gaussian distribution)")
 	private double noise = 5.0;
 
-	@Parameter(names = "-o", description = "Offset to make all values positive")
+	@Parameter(names = "-os", description = "Offset to make all values positive")
 	private float offset = 10000;
 
 	private File logFile;
