@@ -177,7 +177,7 @@ public class LayoutHugeGraph {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-		log("Additinal points found: " + additionalPoints);
+		log("Additional points found: " + additionalPoints);
 		log("Points still missing: " + missingPoints);
 		for (int i = 0 ; i < morePointsX.length ; i++) {
 			pointsX[i] += morePointsX[i];
