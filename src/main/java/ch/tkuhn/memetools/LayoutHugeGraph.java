@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -92,7 +94,9 @@ public class LayoutHugeGraph {
 			retrieveMorePoints(4);
 			retrieveMorePoints(3);
 			retrieveMorePoints(2);
-			retrieveMorePoints(1);
+			do {
+				retrieveMorePoints(1);
+			} while (additionalPoints > 0);
 			writer.close();
 		} catch (Throwable th) {
 			log(th);
@@ -226,8 +230,41 @@ public class LayoutHugeGraph {
 					sumX += pointsX[n];
 					sumY += pointsY[n];
 				}
-				float posX = (float) (sumX / neighbors.size() + random.nextGaussian() * noise);
-				float posY = (float) (sumY / neighbors.size() + random.nextGaussian() * noise);
+				final double avgAllX = sumX / neighbors.size();
+				final double avgAllY = sumY / neighbors.size();
+				double avgX = avgAllX;
+				double avgY = avgAllY;
+				if (neighbors.size() > 2) {
+					// get the 3 points closest to average:
+					List<Integer> nlist = new ArrayList<Integer>(neighbors);
+					Collections.sort(nlist, new Comparator<Integer>() {
+						@Override
+						public int compare(Integer o1, Integer o2) {
+							double xdiff1 = pointsX[o1] - avgAllX;
+							double ydiff1 = pointsY[o1] - avgAllY;
+							double dist1 = xdiff1*xdiff1 + ydiff1*ydiff1;
+							double xdiff2 = pointsX[o2] - avgAllX;
+							double ydiff2 = pointsY[o2] - avgAllY;
+							double dist2 = xdiff2*xdiff2 + ydiff2*ydiff2;
+							return (int) (dist1 - dist2);
+						}
+					});
+					neighbors.clear();
+					for (int i = 0 ; i < 3 ; i++) {
+						neighbors.add(nlist.get(i));
+					}
+					// recalculate average:
+					sumX = 0;
+					sumY = 0;
+					for (int n : neighbors) {
+						sumX += pointsX[n];
+						sumY += pointsY[n];
+					}
+					avgX = sumX / neighbors.size();
+					avgY = sumY / neighbors.size();
+				}
+				float posX = (float) (avgX + random.nextGaussian() * noise);
+				float posY = (float) (avgY + random.nextGaussian() * noise);
 				addPosition(entry, posX, posY);
 				additionalPoints++;
 			} else {
