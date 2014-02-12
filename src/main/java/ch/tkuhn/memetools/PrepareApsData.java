@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,9 @@ public class PrepareApsData {
 	@Parameter(names = "-sdta", description = "Skip generation of title+abstract data file")
 	private boolean skipDataTA = false;
 
+	@Parameter(names = "-r", description = "Randomize graph (for baseline analysis)")
+	private boolean randomize = false;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -73,6 +77,8 @@ public class PrepareApsData {
 	private Map<String,String> dates;
 	private Map<String,String> abstracts;
 	private Map<String,List<String>> references;
+
+	private Map<String,String> randomizedDois;
 
 	private List<String> terms;
 
@@ -111,6 +117,10 @@ public class PrepareApsData {
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
+
+		if (randomize) {
+			randomizedDois = new HashMap<String,String>();
+		}
 	}
 
 	private void processMetadataDir() throws IOException {
@@ -301,21 +311,29 @@ public class PrepareApsData {
 
 	private void writeDataFiles() throws IOException {
 		if (skipData) return;
+		if (randomize) {
+			randomizeDois();
+		}
 		log("Writing data files...");
-		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T.txt");
-		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA.txt");
+		String fileSuffix = ".txt";
+		if (randomize) fileSuffix = "-randomized.txt";
+		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T" + fileSuffix);
+		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA" + fileSuffix);
 		int noAbstracts = 0;
 		BufferedWriter wT = null;
 		BufferedWriter wTA = null;
 		if (!skipDataT) wT = new BufferedWriter(new FileWriter(fileT));
 		if (!skipDataTA) wTA = new BufferedWriter(new FileWriter(fileTA));
 		for (String doi1 : titles.keySet()) {
+			List<String> refs = references.get(doi1);
+			if (randomize) doi1 = randomizedDois.get(doi1);
 			String text = titles.get(doi1);
 			String date = dates.get(doi1);
 			DataEntry eT = new DataEntry(doi1, date, text);
 			if (abstracts.containsKey(doi1)) text += " " + abstracts.get(doi1);
 			DataEntry eTA = new DataEntry(doi1, date, text);
-			for (String doi2 : references.get(doi1)) {
+			for (String doi2 : refs) {
+				if (randomize) doi2 = randomizedDois.get(doi2);
 				text = titles.get(doi2);
 				eT.addCitedText(text);
 				if (abstracts.containsKey(doi2)) text += " " + abstracts.get(doi2);
@@ -329,8 +347,19 @@ public class PrepareApsData {
 		log("No abstracts: " + noAbstracts);
 	}
 
+	private void randomizeDois() {
+		log("Randomizing DOIs...");
+		List<String> doisOut = new ArrayList<String>(titles.keySet());
+		Collections.shuffle(doisOut);
+		int i = 0;
+		for (String doiIn : titles.keySet()) {
+			randomizedDois.put(doiIn, doisOut.get(i));
+			i++;
+		}
+	}
+
 	private void writeGmlFile() throws IOException {
-		if (skipGml) return;
+		if (skipGml || randomize) return;
 		log("Writing GML file...");
 		File file = new File(MemeUtils.getPreparedDataDir(), "aps.gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
