@@ -78,6 +78,7 @@ public class RenderGraph {
 	private float[] pointsX;
 	private float[] pointsY;
 
+	private int[][] edgeMap;
 	private BufferedImage image;
 	private Graphics graphics;
 
@@ -115,6 +116,7 @@ public class RenderGraph {
 		pointsX = new float[150000000];
 		pointsY = new float[150000000];
 
+		edgeMap = new int[size][size];
 		image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
 		graphics = image.getGraphics();
 
@@ -166,6 +168,11 @@ public class RenderGraph {
 				return FileVisitResult.CONTINUE;
 			}
 		});
+		for (int x = 0 ; x < size ; x++) {
+			for (int y = 0 ; y < size ; y++) {
+				image.setRGB(x, y, Math.min(edgeMap[x][y], 123) * 0x01010100);
+			}
+		}
 	}
 
 	private void processEdgesFromFile(Path path) throws IOException {
@@ -210,25 +217,18 @@ public class RenderGraph {
 				if (x2 - x1 > y2 - y1) {
 					for (int x = x1 ; x <= x2 ; x++) {
 						int y = (int) (((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1);
-						drawEdgePixel(x, y);
+						edgeMap[x][y]++;
 					}
 				} else {
 					for (int y = y1 ; y <= y2 ; y++) {
 						int x = (int) (((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1);
-						drawEdgePixel(x, y);
+						edgeMap[x][y]++;
 					}
 				}
 			}
 		}
 		reader.close();
 		log("Number of errors: " + errors);
-	}
-
-	private void drawEdgePixel(int x, int y) {
-		int pixel = image.getRGB(x, y);
-		if (pixel < 0x80808000) {
-			image.setRGB(x, y, pixel + 0x01010100);
-		}
 	}
 
 	private void writeImage() throws IOException {
