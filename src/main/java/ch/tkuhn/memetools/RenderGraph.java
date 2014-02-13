@@ -209,12 +209,12 @@ public class RenderGraph {
 				}
 				if (x2 - x1 > y2 - y1) {
 					for (int x = x1 ; x <= x2 ; x++) {
-						int y = (int) (((float) x / (x2 - x1)) * (y2 - y1) + y1);
+						int y = (int) (((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1);
 						drawEdgePixel(x, y);
 					}
 				} else {
 					for (int y = y1 ; y <= y2 ; y++) {
-						int x = (int) (((float) y / (y2 - y1)) * (x2 - x1) + x1);
+						int x = (int) (((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1);
 						drawEdgePixel(x, y);
 					}
 				}
