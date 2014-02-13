@@ -226,7 +226,7 @@ public class RenderGraph {
 
 	private void drawEdgePixel(int x, int y) {
 		int pixel = image.getRGB(x, y);
-		if (pixel > 0x80808000) {
+		if (pixel < 0x80808000) {
 			image.setRGB(x, y, pixel + 0x01010100);
 		}
 	}
