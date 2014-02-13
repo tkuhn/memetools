@@ -7,12 +7,22 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
 import org.supercsv.io.CsvListReader;
+
+import ch.tkuhn.memetools.PrepareWosData.WosEntry;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -40,6 +50,9 @@ public class RenderGraph {
 	@Parameter(names = "-ds", description = "Size of dots")
 	private int dotSize = 4;
 
+	@Parameter(names = "-v", description = "Write detailed log")
+	private boolean verbose = false;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -62,8 +75,13 @@ public class RenderGraph {
 
 	private static String wosFolder = "wos";
 
+	private float[] pointsX;
+	private float[] pointsY;
+
 	private BufferedImage image;
 	private Graphics graphics;
+
+	private Set<FileVisitOption> walkFileTreeOptions;
 
 	public RenderGraph() {
 	}
@@ -71,8 +89,9 @@ public class RenderGraph {
 	public void run() {
 		try {
 			init();
-			processNodes();
-			processEdges();
+			readNodes();
+			drawEdges();
+			drawNodes();
 			writeImage();
 		} catch (Throwable th) {
 			log(th);
@@ -92,15 +111,19 @@ public class RenderGraph {
 		if (rawWosDataDir == null) {
 			rawWosDataDir = new File(MemeUtils.getRawDataDir(), wosFolder);
 		}
+
+		pointsX = new float[150000000];
+		pointsY = new float[150000000];
+
 		image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
 		graphics = image.getGraphics();
+
+		walkFileTreeOptions = new HashSet<FileVisitOption>();
+		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
 	}
 
-	private void processNodes() throws IOException {
+	private void readNodes() throws IOException {
 		log("Processing nodes from input file: " + inputFile);
-		graphics.setColor(Color.WHITE);
-		graphics.fillRect(0, 0, size, size);
-		graphics.setColor(new Color(0, 0, 255, 16));
 		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
 		int progress = 0;
@@ -108,15 +131,77 @@ public class RenderGraph {
 		while ((line = csvReader.read()) != null) {
 			logProgress(progress);
 			progress++;
-			float x = Float.parseFloat(line.get(1));
-			float y = Float.parseFloat(line.get(2));
-			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale + dotSize/2.0), dotSize, dotSize);
+			int id = Integer.parseInt(line.get(0));
+			pointsX[id] = Float.parseFloat(line.get(1));
+			pointsY[id] = Float.parseFloat(line.get(2));
 		}
 		csvReader.close();
 	}
 
-	private void processEdges() {
-		// TODO
+	private void drawNodes() {
+		log("Drawing nodes...");
+		graphics.setColor(Color.WHITE);
+		graphics.fillRect(0, 0, size, size);
+		graphics.setColor(new Color(0, 0, 255, 16));
+		int progress = 0;
+		for (int i = 0 ; i < 150000000 ; i++) {
+			logProgress(progress);
+			progress++;
+			float x = pointsX[i];
+			if (pointsX[i] == 0) continue;
+			float y = pointsY[i];
+			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale + dotSize/2.0), dotSize, dotSize);
+		}
+	}
+
+	private void drawEdges() throws IOException {
+		log("Drawing edges from " + rawWosDataDir + " ...");
+		graphics.setColor(new Color(123, 123, 123, 4));
+		Files.walkFileTree(rawWosDataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				if (path.toString().endsWith(".txt")) {
+					processEdgesFromFile(path);
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
+	}
+
+	private void processEdgesFromFile(Path path) throws IOException {
+		log("Reading file to collect edges: " + path);
+		BufferedReader reader = new BufferedReader(new FileReader(path.toFile()), 64*1024);
+		int errors = 0;
+		String line;
+		while ((line = reader.readLine()) != null) {
+			WosEntry entry;
+			if (verbose) {
+				entry = new WosEntry(line, logFile);
+			} else {
+				entry = new WosEntry(line);
+			}
+			if (!entry.isValid()) {
+				errors++;
+				continue;
+			}
+			int id1 = entry.getIdInt();
+			if (pointsX[id1] == 0) continue;
+			String neighborIds = entry.getRef();
+			while (!neighborIds.isEmpty()) {
+				String nId = neighborIds.substring(0, 9);
+				int id2 = Integer.parseInt(nId);
+				neighborIds = neighborIds.substring(9);
+				if (pointsX[id2] == 0) continue;
+				graphics.drawLine(
+						(int) (pointsX[id1]*scale),
+						(int) (size - pointsY[id1]*scale),
+						(int) (pointsX[id2]*scale),
+						(int) (size - pointsX[id2]*scale)
+					);
+			}
+		}
+		reader.close();
+		log("Number of errors: " + errors);
 	}
 
 	private void writeImage() throws IOException {
