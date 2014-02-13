@@ -142,8 +142,6 @@ public class RenderGraph {
 
 	private void drawNodes() {
 		log("Drawing nodes...");
-		graphics.setColor(Color.WHITE);
-		graphics.fillRect(0, 0, size, size);
 		graphics.setColor(new Color(0, 0, 255, 16));
 		int progress = 0;
 		for (int i = 0 ; i < 150000000 ; i++) {
@@ -170,7 +168,7 @@ public class RenderGraph {
 		});
 		for (int x = 0 ; x < size ; x++) {
 			for (int y = 0 ; y < size ; y++) {
-				image.setRGB(x, y, Math.min(edgeMap[x][y], 123) * 0x01010100);
+				image.setRGB(x, y, 0xffffff00 - Math.min(edgeMap[x][y], 123) * 0x01010100);
 			}
 		}
 	}
