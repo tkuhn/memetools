@@ -192,16 +192,43 @@ public class RenderGraph {
 				int id2 = Integer.parseInt(nId);
 				neighborIds = neighborIds.substring(9);
 				if (pointsX[id2] == 0) continue;
-				graphics.drawLine(
-						(int) (pointsX[id1]*scale),
-						(int) (size - pointsY[id1]*scale),
-						(int) (pointsX[id2]*scale),
-						(int) (size - pointsX[id2]*scale)
-					);
+				// draw line
+				int x1 = (int) (pointsX[id1]*scale);
+				int y1 = (int) (size - pointsY[id1]*scale);
+				int x2 = (int) (pointsX[id2]*scale);
+				int y2 = (int) (size - pointsX[id2]*scale);
+				if (x1 > x2) {
+					int t1 = x1;
+					x1 = x2;
+					x2 = t1;
+				}
+				if (y1 > y2) {
+					int t1 = y1;
+					y1 = y2;
+					y2 = t1;
+				}
+				if (x2 - x1 > y2 - y1) {
+					for (int x = x1 ; x <= x2 ; x++) {
+						int y = (int) (((float) x / (x2 - x1)) * (y2 - y1) + y1);
+						drawEdgePixel(x, y);
+					}
+				} else {
+					for (int y = y1 ; y <= y2 ; y++) {
+						int x = (int) (((float) y / (y2 - y1)) * (x2 - x1) + x1);
+						drawEdgePixel(x, y);
+					}
+				}
 			}
 		}
 		reader.close();
 		log("Number of errors: " + errors);
+	}
+
+	private void drawEdgePixel(int x, int y) {
+		int pixel = image.getRGB(x, y);
+		if (pixel > 0x80808000) {
+			image.setRGB(x, y, pixel + 0x01010100);
+		}
 	}
 
 	private void writeImage() throws IOException {
