@@ -78,7 +78,7 @@ public class RenderGraph {
 	private float[] pointsX;
 	private float[] pointsY;
 
-	private int[][] edgeMap;
+	private float[][] edgeMap;
 	private BufferedImage image;
 	private Graphics graphics;
 
@@ -116,7 +116,7 @@ public class RenderGraph {
 		pointsX = new float[150000000];
 		pointsY = new float[150000000];
 
-		edgeMap = new int[size][size];
+		edgeMap = new float[size][size];
 		image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
 		graphics = image.getGraphics();
 
@@ -168,7 +168,9 @@ public class RenderGraph {
 		});
 		for (int x = 0 ; x < size ; x++) {
 			for (int y = 0 ; y < size ; y++) {
-				image.setRGB(x, y, 0xffffff00 - Math.min(edgeMap[x][y], 123) * 0x01010100);
+				int p = (int) (edgeMap[x][y] * 124);
+				if (p == 0) continue;
+				image.setRGB(x, y, 0xffffff - p * 0x010101);
 			}
 		}
 	}
@@ -215,12 +217,14 @@ public class RenderGraph {
 				if (x2 - x1 > y2 - y1) {
 					for (int x = x1 ; x <= x2 ; x++) {
 						int y = (int) (((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1);
-						edgeMap[x][y]++;
+						float v = edgeMap[x][y];
+						edgeMap[x][y] = (float) (v + 0.01 - v * 0.01);
 					}
 				} else {
 					for (int y = y1 ; y <= y2 ; y++) {
 						int x = (int) (((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1);
-						edgeMap[x][y]++;
+						float v = edgeMap[x][y];
+						edgeMap[x][y] = (float) (v + 0.01 - v * 0.01);
 					}
 				}
 			}
