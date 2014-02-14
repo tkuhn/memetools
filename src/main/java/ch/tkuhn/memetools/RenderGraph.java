@@ -53,7 +53,7 @@ public class RenderGraph {
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
 
-	private float edgeAlpha = 0.00001f;
+	private float edgeAlpha = 0.0001f;
 
 	private File logFile;
 
@@ -152,7 +152,7 @@ public class RenderGraph {
 			float x = pointsX[i];
 			if (pointsX[i] == 0) continue;
 			float y = pointsY[i];
-			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale + dotSize/2.0), dotSize, dotSize);
+			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale - dotSize/2.0), dotSize, dotSize);
 		}
 	}
 
