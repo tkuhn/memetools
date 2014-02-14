@@ -169,7 +169,6 @@ public class RenderGraph {
 		for (int x = 0 ; x < size ; x++) {
 			for (int y = 0 ; y < size ; y++) {
 				int p = (int) (edgeMap[x][y] * 124);
-				if (p == 0) continue;
 				image.setRGB(x, y, 0xffffff - p * 0x010101);
 			}
 		}
@@ -203,7 +202,7 @@ public class RenderGraph {
 				int x1 = (int) (pointsX[id1]*scale);
 				int y1 = (int) (size - pointsY[id1]*scale);
 				int x2 = (int) (pointsX[id2]*scale);
-				int y2 = (int) (size - pointsX[id2]*scale);
+				int y2 = (int) (size - pointsY[id2]*scale);
 				if (x1 > x2) {
 					int t1 = x1;
 					x1 = x2;
