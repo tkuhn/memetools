@@ -53,6 +53,8 @@ public class RenderGraph {
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
 
+	private float edgeAlpha = 0.00001f;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -156,7 +158,6 @@ public class RenderGraph {
 
 	private void drawEdges() throws IOException {
 		log("Drawing edges from " + rawWosDataDir + " ...");
-		graphics.setColor(new Color(123, 123, 123, 4));
 		Files.walkFileTree(rawWosDataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -168,7 +169,9 @@ public class RenderGraph {
 		});
 		for (int x = 0 ; x < size ; x++) {
 			for (int y = 0 ; y < size ; y++) {
-				int p = (int) (edgeMap[x][y] * 124);
+				int p = 0;
+				float v = edgeMap[x][y];
+				if (v > 0) p = (int) (edgeMap[x][y] * 123 + 1);
 				image.setRGB(x, y, 0xffffff - p * 0x010101);
 			}
 		}
@@ -203,33 +206,40 @@ public class RenderGraph {
 				int y1 = (int) (size - pointsY[id1]*scale);
 				int x2 = (int) (pointsX[id2]*scale);
 				int y2 = (int) (size - pointsY[id2]*scale);
-				if (x1 > x2) {
-					int t1 = x1;
-					x1 = x2;
-					x2 = t1;
-				}
-				if (y1 > y2) {
-					int t1 = y1;
-					y1 = y2;
-					y2 = t1;
-				}
-				if (x2 - x1 > y2 - y1) {
+				if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
+					if (x1 > x2) {
+						int tx1 = x1;
+						x1 = x2;
+						x2 = tx1;
+						int ty1 = y1;
+						y1 = y2;
+						y2 = ty1;
+					}
 					for (int x = x1 ; x <= x2 ; x++) {
-						int y = (int) (((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1);
-						float v = edgeMap[x][y];
-						edgeMap[x][y] = (float) (v + 0.01 - v * 0.01);
+						drawEdgePixel(x, (int) ( ((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1 ) );
 					}
 				} else {
+					if (y1 > y2) {
+						int tx1 = x1;
+						x1 = x2;
+						x2 = tx1;
+						int ty1 = y1;
+						y1 = y2;
+						y2 = ty1;
+					}
 					for (int y = y1 ; y <= y2 ; y++) {
-						int x = (int) (((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1);
-						float v = edgeMap[x][y];
-						edgeMap[x][y] = (float) (v + 0.01 - v * 0.01);
+						drawEdgePixel((int) ( ((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1 ), y);
 					}
 				}
 			}
 		}
 		reader.close();
 		log("Number of errors: " + errors);
+	}
+
+	private void drawEdgePixel(int x, int y) {
+		float v = edgeMap[x][y];
+		edgeMap[x][y] = (float) (v + edgeAlpha - v * edgeAlpha);
 	}
 
 	private void writeImage() throws IOException {
