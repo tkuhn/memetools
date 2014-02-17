@@ -53,7 +53,7 @@ public class RenderGraph {
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
 
-	private float edgeAlpha = 0.0001f;
+	private float edgeAlpha = 0.001f;
 
 	private File logFile;
 
