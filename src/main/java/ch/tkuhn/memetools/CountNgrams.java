@@ -143,8 +143,7 @@ public class CountNgrams {
 	private void processTerms() throws IOException {
 		log("Filtering and writing output...");
 		int n = 0;
-		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		Writer w = new BufferedWriter(new FileWriter(outputFile));
 		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 		csvWriter.write("COUNT", "TERM");
 		for (String term : ngrams.keySet()) {
@@ -161,7 +160,11 @@ public class CountNgrams {
 
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		String filename = "fr-" + basename + "-g" + g + "-t" + t;
+		String filename = "fr-" + basename;
+		if (termsFile == null) {
+			filename += "-g" + g;
+		}
+		filename += "-t" + t;
 		if (year != null) {
 			filename += "-y" + year;
 		} else if (yearStart != null || yearEnd != null) {
