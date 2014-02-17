@@ -77,11 +77,10 @@ public class CountNgrams {
 		log("==========");
 
 		try {
-			if (termsFile == null) {
-				extractTerms();
-			} else {
+			if (termsFile != null) {
 				readTerms();
 			}
+			extractTerms();
 			processTerms();
 		} catch (IOException ex) {
 			log(ex);
