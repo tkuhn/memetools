@@ -34,6 +34,9 @@ public class CountNgrams {
 	@Parameter(names = "-t", description = "Threshold count")
 	private int t = 10;
 
+	@Parameter(names = "-f", description = "Read terms from file")
+	private File termsFile;
+
 	@Parameter(names = "-y", description = "Count n-grams for given year")
 	private Integer year;
 
@@ -64,6 +67,7 @@ public class CountNgrams {
 	}
 
 	private Map<String,Integer> ngrams;
+	private List<String> terms;
 
 	public CountNgrams() {
 	}
@@ -72,49 +76,18 @@ public class CountNgrams {
 		init();
 		log("==========");
 
-		ngrams = new HashMap<String,Integer>();
-		int n = 0;
-
 		try {
-			log("Extracting terms from input file: " + inputFile);
-			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-			String line;
-			while ((line = reader.readLine()) != null) {
-				n++;
-				logProgress(n);
-				DataEntry d = new DataEntry(line);
-				if (!considerYear(d.getYear())) continue;
-				recordNgrams(d);
+			if (termsFile == null) {
+				extractTerms();
+			} else {
+				readTerms();
 			}
-			reader.close();
+			processTerms();
 		} catch (IOException ex) {
 			log(ex);
 			System.exit(1);
 		}
-		log("Total number of documents: " + n);
-		log("Number of unique n-grams: " + ngrams.size());
 
-		log("Filtering and writing output...");
-		n = 0;
-		try {
-			File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-			Writer w = new BufferedWriter(new FileWriter(csvFile));
-			CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("COUNT", "TERM");
-			for (String term : ngrams.keySet()) {
-				int c = ngrams.get(term);
-				if (c >= t) {
-					n++;
-					logProgress(n);
-					csvWriter.write(c, term);
-				}
-			}
-			csvWriter.close();
-		} catch (IOException ex) {
-			log(ex);
-			System.exit(1);
-		}
-		log("Number of n-grams after filtering: " + n);
 		log("Finished");
 	}
 
@@ -123,6 +96,68 @@ public class CountNgrams {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 		}
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
+
+		ngrams = new HashMap<String,Integer>();
+
+		if (termsFile != null) {
+			terms = new ArrayList<String>();
+		}
+	}
+
+	private void readTerms() throws IOException {
+		log("Reading terms from file: " + termsFile);
+		BufferedReader reader = new BufferedReader(new FileReader(termsFile));
+		String term;
+		while ((term = reader.readLine()) != null) {
+			terms.add(MemeUtils.normalize(term));
+		}
+		log("Number of n-grams: " + ngrams.size());
+		reader.close();
+	}
+
+	private void extractTerms() throws IOException {
+		log("Extracting terms from input file: " + inputFile);
+		int n = 0;
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+		String line;
+		while ((line = reader.readLine()) != null) {
+			n++;
+			logProgress(n);
+			DataEntry d = new DataEntry(line);
+			if (!considerYear(d.getYear())) continue;
+			if (termsFile == null) {
+				recordNgrams(d);
+			} else {
+				String t = " " + d.getText() + " ";
+				for (String term : terms) {
+					if (t.contains(" " + term + " ")) {
+						increaseCount(term);
+					}
+				}
+			}
+		}
+		reader.close();
+		log("Total number of documents: " + n);
+		log("Number of unique n-grams: " + ngrams.size());
+	}
+
+	private void processTerms() throws IOException {
+		log("Filtering and writing output...");
+		int n = 0;
+		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write("COUNT", "TERM");
+		for (String term : ngrams.keySet()) {
+			int c = ngrams.get(term);
+			if (c >= t) {
+				n++;
+				logProgress(n);
+				csvWriter.write(c, term);
+			}
+		}
+		csvWriter.close();
+		log("Number of n-grams after filtering: " + n);
 	}
 
 	private String getOutputFileName() {
@@ -157,12 +192,16 @@ public class CountNgrams {
 				term = term.trim();
 				if (processed.containsKey(term)) continue;
 				processed.put(term, true);
-				if (ngrams.containsKey(term)) {
-					ngrams.put(term, ngrams.get(term) + 1);
-				} else {
-					ngrams.put(term, 0);
-				}
+				increaseCount(term);
 			}
+		}
+	}
+
+	private void increaseCount(String term) {
+		if (ngrams.containsKey(term)) {
+			ngrams.put(term, ngrams.get(term) + 1);
+		} else {
+			ngrams.put(term, 0);
 		}
 	}
 
