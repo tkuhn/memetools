@@ -53,7 +53,11 @@ public class RenderGraph {
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
 
-	private float edgeAlpha = 0.001f;
+	@Parameter(names = "-na", description = "Node alpha")
+	private float nodeAlpha = 0.065f;
+
+	@Parameter(names = "-ea", description = "Edge alpha")
+	private float edgeAlpha = 0.002f;
 
 	private File logFile;
 
@@ -144,7 +148,7 @@ public class RenderGraph {
 
 	private void drawNodes() {
 		log("Drawing nodes...");
-		graphics.setColor(new Color(0, 0, 255, 16));
+		graphics.setColor(new Color(0, 0, 255, (int) (nodeAlpha * 255)));
 		int progress = 0;
 		for (int i = 0 ; i < 150000000 ; i++) {
 			logProgress(progress);
