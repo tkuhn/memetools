@@ -35,6 +35,12 @@ public class PrepareWosData {
 	@Parameter(names = "-d", description = "The directory to read the raw data from")
 	private File rawWosDataDir;
 
+	@Parameter(names = "-sg", description = "Skip GML file generation")
+	private boolean skipGml = false;
+
+	@Parameter(names = "-sd", description = "Skip data file generation")
+	private boolean skipData = false;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -130,6 +136,7 @@ public class PrepareWosData {
 	}
 
 	private void writeDataFile() throws IOException {
+		if (skipData) return;
 		log("Writing data file...");
 		String filename = "wos-T";
 		if (cth > 0) filename += "-c" + cth;
@@ -154,6 +161,7 @@ public class PrepareWosData {
 	}
 
 	private void writeGmlFile() throws IOException {
+		if (skipGml) return;
 		log("Writing GML file...");
 		String filename = "wos";
 		if (cth > 0) filename += "-c" + cth;
