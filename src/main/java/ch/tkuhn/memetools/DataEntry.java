@@ -7,20 +7,20 @@ public class DataEntry {
 
 	public static final String SEP = "  ";
 
-	private String doi;
-	private String date;
+	private Object id;
+	private Object date;
 	private String text;
 	private List<String> citedText;
 
-	public DataEntry(String doi, String date, String text, List<String> citedText) {
-		this.doi = doi;
+	public DataEntry(Object id, Object date, String text, List<String> citedText) {
+		this.id = id;
 		this.date = date;
 		this.text = text;
 		this.citedText = citedText;
 	}
 
-	public DataEntry(String doi, String date, String text) {
-		this(doi, date, text, new ArrayList<String>());
+	public DataEntry(Object id, Object date, String text) {
+		this(id, date, text, new ArrayList<String>());
 	}
 
 	public DataEntry(String line) {
@@ -29,7 +29,7 @@ public class DataEntry {
 			throw new RuntimeException("Invalid line: " + line);
 		}
 		date = splitline[0];
-		doi = splitline[1];
+		id = splitline[1];
 		text = splitline[2];
 		citedText = new ArrayList<String>();
 		for (int i = 3 ; i < splitline.length ; i++) {
@@ -37,16 +37,26 @@ public class DataEntry {
 		}
 	}
 
-	public String getDoi() {
-		return doi;
+	public String getId() {
+		return id.toString();
+	}
+
+	public int getIdInt() {
+		if (id instanceof Integer) {
+			return (Integer) id;
+		}
+		return Integer.parseInt(id.toString());
 	}
 
 	public String getDate() {
-		return date;
+		return date.toString();
 	}
 
-	public int getYear() {
-		return Integer.parseInt(date.substring(0, 4));
+	public short getYear() {
+		if (date instanceof Short) {
+			return (Short) date;
+		}
+		return Short.parseShort(date.toString().substring(0, 4));
 	}
 
 	public String getText() {
@@ -62,7 +72,7 @@ public class DataEntry {
 	}
 
 	public String getLine() {
-		String line = date + SEP + doi + SEP + text;
+		String line = date + SEP + id + SEP + text;
 		for (String c : citedText) {
 			line += SEP + c;
 		}

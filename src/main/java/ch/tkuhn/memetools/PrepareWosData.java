@@ -57,9 +57,13 @@ public class PrepareWosData {
 
 	private static String wosFolder = "wos";
 
+	private final static int MAX_WOS_ID = 150000000;
+
 	private Map<String,String> titles;
-	private Map<String,String> years;
+	private Map<String,Short> years;
 	private Map<String,String> references;
+
+	private int docCount;
 
 	private Set<FileVisitOption> walkFileTreeOptions;
 
@@ -85,8 +89,10 @@ public class PrepareWosData {
 		log("Starting...");
 
 		titles = new HashMap<String,String>();
-		years = new HashMap<String,String>();
+		years = new HashMap<String,Short>();
 		references = new HashMap<String,String>();
+
+		docCount = 0;
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
@@ -106,7 +112,7 @@ public class PrepareWosData {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-		log("Number of documents: " + titles.size());
+		log("Number of documents: " + docCount);
 	}
 
 	private void readData(Path path) throws IOException {
@@ -125,11 +131,12 @@ public class PrepareWosData {
 				errors++;
 				continue;
 			}
-			if (entry.getRefCount() < rth) continue; 
-			if (entry.getCitCount() < cth) continue; 
-			titles.put(entry.getId(), MemeUtils.normalize(entry.getTitle()));
-			years.put(entry.getId(), entry.getYear());
-			references.put(entry.getId(), entry.getRef());
+			if (entry.getRefCount() < rth) continue;
+			if (entry.getCitCount() < cth) continue;
+			docCount++;
+			putTitle(entry.getIdInt(), MemeUtils.normalize(entry.getTitle()));
+			putYear(entry.getIdInt(), entry.getYear());
+			putReferences(entry.getIdInt(), entry.getRef());
 		}
 		reader.close();
 		log("Number of errors: " + errors);
@@ -143,16 +150,17 @@ public class PrepareWosData {
 		if (rth > 0) filename += "-r" + rth;
 		File file = new File(MemeUtils.getPreparedDataDir(), filename + ".txt");
 		BufferedWriter wT = new BufferedWriter(new FileWriter(file));
-		for (String id1 : titles.keySet()) {
-			String text = titles.get(id1);
-			String year = years.get(id1);
+		for (int id1 = 0 ; id1 < MAX_WOS_ID ; id1++) {
+			String text = getTitle(id1);
+			if (text == null) continue;
+			short year = getYear(id1);
 			DataEntry e = new DataEntry(id1, year, text);
-			String refs = references.get(id1);
+			String refs = getReferences(id1);
 			while (!refs.isEmpty()) {
 				String id2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				if (titles.containsKey(id2)) {
-					e.addCitedText(titles.get(id2));
+				if (getTitle(id2) != null) {
+					e.addCitedText(getTitle(id2));
 				}
 			}
 			wT.write(e.getLine() + "\n");
@@ -170,9 +178,10 @@ public class PrepareWosData {
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
-		for (String id : titles.keySet()) {
-			String year = years.get(id);
-			String text = titles.get(id);
+		for (int id = 0 ; id < MAX_WOS_ID ; id++) {
+			String text = getTitle(id);
+			if (text == null) continue;
+			short year = getYear(id);
 			text = " " + text + " ";
 			w.write("node [\n");
 			w.write("id \"" + id + "\"\n");
@@ -184,12 +193,13 @@ public class PrepareWosData {
 			if (text.contains(" graphene ")) w.write("memeGraphene \"y\"\n");
 			w.write("]\n");
 		}
-		for (String id1 : references.keySet()) {
-			String refs = references.get(id1);
+		for (int id1 = 0 ; id1 < MAX_WOS_ID ; id1++) {
+			String refs = getReferences(id1);
+			if (refs == null) continue;
 			while (!refs.isEmpty()) {
 				String id2 = refs.substring(0, 9);
 				refs = refs.substring(9);
-				if (titles.containsKey(id2)) {
+				if (getTitle(id2) != null) {
 					w.write("edge [\n");
 					w.write("source \"" + id1 + "\"\n");
 					w.write("target \"" + id2 + "\"\n");
@@ -199,6 +209,30 @@ public class PrepareWosData {
 		}
 		w.write("]\n");
 		w.close();
+	}
+
+	private void putTitle(int id, String title) {
+		titles.put(id+"", title);
+	}
+
+	private String getTitle(Object id) {
+		return titles.get(id.toString());
+	}
+
+	private void putYear(int id, short year) {
+		years.put(id+"", year);
+	}
+
+	private short getYear(Object id) {
+		return years.get(id.toString());
+	}
+
+	private void putReferences(int id, String ref) {
+		references.put(id+"", ref);
+	}
+
+	private String getReferences(Object id) {
+		return references.get(id.toString());
 	}
 
 	private void log(Object obj) {
@@ -233,7 +267,7 @@ public class PrepareWosData {
 		private String id;
 		private Integer idInt;
 		private String title;
-		private String year;
+		private short year;
 		private String ref;
 		private String cit;
 		private int refCount;
@@ -256,7 +290,7 @@ public class PrepareWosData {
 			return title;
 		}
 
-		String getYear() {
+		short getYear() {
 			return year;
 		}
 
@@ -292,11 +326,12 @@ public class PrepareWosData {
 				log("Invalid ID: " + id);
 				return;
 			}
-			year = parts[1];
-			if (!year.matches("[0-9]{4}")) {
-				log("Invalid year: " + year);
+			String yearStr = parts[1];
+			if (!yearStr.matches("[0-9]{4}")) {
+				log("Invalid year: " + yearStr);
 				return;
 			}
+			year = Short.parseShort(yearStr);
 			title = parts[9];
 			if (title.isEmpty()) {
 				log("Empty title for publication: " + id);
