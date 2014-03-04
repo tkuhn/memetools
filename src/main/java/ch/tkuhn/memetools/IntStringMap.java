@@ -32,6 +32,12 @@ public class IntStringMap {
 		}
 		long s = MAX_POS*data.size() + sb.length();
 		sb.append(value);
+		if (s < 0) {
+			throw new RuntimeException("Negative start position");
+		}
+		if (l < 0) {
+			throw new RuntimeException("Negative length");
+		}
 		startPos[key] = s;
 		length[key] = l;
 	}
@@ -41,10 +47,23 @@ public class IntStringMap {
 			throw new RuntimeException("Not yet frozen");
 		}
 		long s = startPos[key];
+		if (s < 0) {
+			throw new RuntimeException("Negative start position");
+		}
 		if (s == 0) return null;
 		int l = length[key];
+		if (l < 0) {
+			throw new RuntimeException("Negative length");
+		}
 		int subpos = (int) (s % MAX_POS);
-		return data.get((int) (s / MAX_POS)).substring(subpos, subpos + l);
+		int subposEnd = subpos + l;
+		if (subpos < 0) {
+			throw new RuntimeException("Negative sub-position start");
+		}
+		if (subposEnd < 0) {
+			throw new RuntimeException("Negative sub-position end");
+		}
+		return data.get((int) (s / MAX_POS)).substring(subpos, subposEnd);
 	}
 
 	public void freeze() {
