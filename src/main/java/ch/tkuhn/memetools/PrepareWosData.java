@@ -12,9 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import com.beust.jcommander.JCommander;
@@ -59,9 +57,9 @@ public class PrepareWosData {
 
 	private final static int MAX_WOS_ID = 150000000;
 
-	private Map<String,String> titles;
-	private Map<String,Short> years;
-	private Map<String,String> references;
+	private IntStringMap titles;
+	private Short[] years;
+	private IntStringMap references;
 
 	private int docCount;
 
@@ -88,9 +86,9 @@ public class PrepareWosData {
 		log("==========");
 		log("Starting...");
 
-		titles = new HashMap<String,String>();
-		years = new HashMap<String,Short>();
-		references = new HashMap<String,String>();
+		titles = new IntStringMap(MAX_WOS_ID);
+		years = new Short[MAX_WOS_ID];
+		references = new IntStringMap(MAX_WOS_ID);
 
 		docCount = 0;
 
@@ -212,27 +210,36 @@ public class PrepareWosData {
 	}
 
 	private void putTitle(int id, String title) {
-		titles.put(id+"", title);
+		titles.put(id, title);
 	}
 
 	private String getTitle(Object id) {
-		return titles.get(id.toString());
+		if (id instanceof Integer) {
+			return titles.get((Integer) id);
+		}
+		return titles.get(Integer.parseInt(id.toString()));
 	}
 
 	private void putYear(int id, short year) {
-		years.put(id+"", year);
+		years[id] = year;
 	}
 
 	private short getYear(Object id) {
-		return years.get(id.toString());
+		if (id instanceof Integer) {
+			return years[(Integer) id];
+		}
+		return years[Integer.parseInt(id.toString())];
 	}
 
 	private void putReferences(int id, String ref) {
-		references.put(id+"", ref);
+		references.put(id, ref);
 	}
 
 	private String getReferences(Object id) {
-		return references.get(id.toString());
+		if (id instanceof Integer) {
+			return references.get((Integer) id);
+		}
+		return references.get(Integer.parseInt(id.toString()));
 	}
 
 	private void log(Object obj) {
