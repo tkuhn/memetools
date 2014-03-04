@@ -25,15 +25,15 @@ public class IntStringMap {
 		if (frozen) {
 			throw new RuntimeException("Frozen");
 		}
-		long s = MAX_POS*data.size() + sb.length();
 		int l = value.length();
-		sb.append(value);
-		startPos[key] = s;
-		length[key] = l;
-		if (sb.length() > MAX_POS) {
+		if (sb.length() + l >= MAX_POS) {
 			data.add(sb.toString());
 			sb = new StringBuilder();
 		}
+		long s = MAX_POS*data.size() + sb.length();
+		sb.append(value);
+		startPos[key] = s;
+		length[key] = l;
 	}
 
 	public String get(int key) {
