@@ -11,7 +11,7 @@ public class IntStringMap {
 	private long[] startPos;
 	private int[] length;
 
-	private StringBuilder sb = new StringBuilder();
+	private StringBuilder sb = new StringBuilder(Integer.MAX_VALUE);
 
 	private boolean frozen = false;
 
@@ -28,9 +28,9 @@ public class IntStringMap {
 		int l = value.length();
 		if (sb.length() + l >= MAX_POS) {
 			data.add(sb.toString());
-			sb = new StringBuilder();
+			sb = new StringBuilder(Integer.MAX_VALUE);
 		}
-		long s = MAX_POS*data.size() + sb.length();
+		long s = (long) MAX_POS*data.size() + sb.length();
 		sb.append(value);
 		if (s < 0) {
 			throw new RuntimeException("Negative start position");
