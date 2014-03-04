@@ -154,7 +154,7 @@ public class PrepareWosData {
 			String text = getTitle(id1);
 			if (text == null) continue;
 			short year = getYear(id1);
-			DataEntry e = new DataEntry(id1, year, text);
+			DataEntry e = new DataEntry(getIdString(id1), year, text);
 			String refs = getReferences(id1);
 			while (!refs.isEmpty()) {
 				String id2 = refs.substring(0, 9);
@@ -184,7 +184,7 @@ public class PrepareWosData {
 			short year = getYear(id);
 			text = " " + text + " ";
 			w.write("node [\n");
-			w.write("id \"" + id + "\"\n");
+			w.write("id \"" + getIdString(id) + "\"\n");
 			w.write("year \"" + year + "\"\n");
 			// TODO Make this general:
 			if (text.contains(" quantum ")) w.write("memeQuantum \"y\"\n");
@@ -197,18 +197,22 @@ public class PrepareWosData {
 			String refs = getReferences(id1);
 			if (refs == null) continue;
 			while (!refs.isEmpty()) {
-				String id2 = refs.substring(0, 9);
+				String id2Str = refs.substring(0, 9);
 				refs = refs.substring(9);
-				if (getTitle(id2) != null) {
+				if (getTitle(id2Str) != null) {
 					w.write("edge [\n");
-					w.write("source \"" + id1 + "\"\n");
-					w.write("target \"" + id2 + "\"\n");
+					w.write("source \"" + getIdString(id1) + "\"\n");
+					w.write("target \"" + id2Str + "\"\n");
 					w.write("]\n");
 				}
 			}
 		}
 		w.write("]\n");
 		w.close();
+	}
+
+	private String getIdString(int id) {
+		return String.format("%09d", id);
 	}
 
 	private void putTitle(int id, String title) {
