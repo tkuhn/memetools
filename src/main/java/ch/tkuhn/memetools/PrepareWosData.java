@@ -110,6 +110,8 @@ public class PrepareWosData {
 				return FileVisitResult.CONTINUE;
 			}
 		});
+		titles.freeze();
+		references.freeze();
 		log("Number of documents: " + docCount);
 	}
 
