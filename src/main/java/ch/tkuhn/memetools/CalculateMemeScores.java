@@ -111,7 +111,6 @@ public class CalculateMemeScores {
 			ms.screenTerms(d);
 		}
 		reader.close();
-		log("Total number of documents: " + ms.getT());
 		log("Number of unique terms with meme score > 0: " + ms.getMM().size());
 		ms.fixTerms();
 	}
@@ -135,6 +134,7 @@ public class CalculateMemeScores {
 			log(ex);
 			System.exit(1);
 		}
+		log("Total number of documents: " + ms.getT());
 		log("Number of errors: " + errors);
 	}
 
