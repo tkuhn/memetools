@@ -55,6 +55,9 @@ public class PrepareApsData {
 	@Parameter(names = "-r", description = "Randomize graph (for baseline analysis)")
 	private boolean randomize = false;
 
+	@Parameter(names = "-rw", description = "Randomize graph within time window (keeping time structure mostly intact)")
+	private int randomizeTimeWindow = 0;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -117,6 +120,10 @@ public class PrepareApsData {
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
+
+		if (randomizeTimeWindow > 0) {
+			randomize = true;
+		}
 
 		if (randomize) {
 			randomizedDois = new HashMap<String,String>();
@@ -349,13 +356,42 @@ public class PrepareApsData {
 
 	private void randomizeDois() {
 		log("Randomizing DOIs...");
-		List<String> doisOut = new ArrayList<String>(titles.keySet());
-		Collections.shuffle(doisOut);
+		if (randomizeTimeWindow > 0) {
+			List<String> dateDoiList = new ArrayList<String>(titles.size());
+			for (String doi : titles.keySet()) {
+				String date = dates.get(doi);
+				if (date == null) date = "";
+				dateDoiList.add(date + " " + doi);
+			}
+			Collections.sort(dateDoiList);
+			List<String> dois = new ArrayList<String>(randomizeTimeWindow);
+			for (String dateDoi : dateDoiList) {
+				dois.add(dateDoi.split(" ", -1)[1]);
+				if (dois.size() >= randomizeTimeWindow) {
+					randomizeDois(dois);
+				}
+			}
+			randomizeDois(dois);
+		} else {
+			List<String> doisOut = new ArrayList<String>(titles.keySet());
+			Collections.shuffle(doisOut);
+			int i = 0;
+			for (String doiIn : titles.keySet()) {
+				randomizedDois.put(doiIn, doisOut.get(i));
+				i++;
+			}
+		}
+	}
+
+	private void randomizeDois(List<String> dois) {
+		List<String> doisShuffled = new ArrayList<String>(dois);
+		Collections.shuffle(doisShuffled);
 		int i = 0;
-		for (String doiIn : titles.keySet()) {
-			randomizedDois.put(doiIn, doisOut.get(i));
+		for (String doiIn : dois) {
+			randomizedDois.put(doiIn, doisShuffled.get(i));
 			i++;
 		}
+		dois.clear();
 	}
 
 	private void writeGmlFile() throws IOException {
