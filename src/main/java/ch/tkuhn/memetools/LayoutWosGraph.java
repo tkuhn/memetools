@@ -26,7 +26,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-public class LayoutHugeGraph {
+public class LayoutWosGraph {
 
 	@Parameter(description = "gexf-input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
@@ -51,7 +51,7 @@ public class LayoutHugeGraph {
 	private File logFile;
 
 	public static final void main(String[] args) {
-		LayoutHugeGraph obj = new LayoutHugeGraph();
+		LayoutWosGraph obj = new LayoutWosGraph();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -81,7 +81,7 @@ public class LayoutHugeGraph {
 	private BufferedWriter writer;
 	private Set<FileVisitOption> walkFileTreeOptions;
 
-	public LayoutHugeGraph() {
+	public LayoutWosGraph() {
 	}
 
 	public void run() {

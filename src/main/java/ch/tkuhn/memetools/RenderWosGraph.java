@@ -28,7 +28,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-public class RenderGraph {
+public class RenderWosGraph {
 
 	@Parameter(description = "input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
@@ -62,7 +62,7 @@ public class RenderGraph {
 	private File logFile;
 
 	public static final void main(String[] args) {
-		RenderGraph obj = new RenderGraph();
+		RenderWosGraph obj = new RenderWosGraph();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -90,7 +90,7 @@ public class RenderGraph {
 
 	private Set<FileVisitOption> walkFileTreeOptions;
 
-	public RenderGraph() {
+	public RenderWosGraph() {
 	}
 
 	public void run() {
