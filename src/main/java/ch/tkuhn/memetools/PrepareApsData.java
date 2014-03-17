@@ -323,7 +323,11 @@ public class PrepareApsData {
 		}
 		log("Writing data files...");
 		String fileSuffix = ".txt";
-		if (randomize) fileSuffix = "-randomized.txt";
+		if (randomizeTimeWindow > 0) {
+			fileSuffix = "-randomized" + randomizeTimeWindow + ".txt";
+		} else if (randomize) {
+			fileSuffix = "-randomized.txt";
+		}
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T" + fileSuffix);
 		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA" + fileSuffix);
 		int noAbstracts = 0;
