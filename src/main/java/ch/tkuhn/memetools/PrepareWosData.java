@@ -252,7 +252,7 @@ public class PrepareWosData {
 		MemeUtils.log(logFile, obj);
 	}
 
-	
+
 	// Data format: semicolon-delimited with the following columns:
 	//
     // 0 t9 (9 last digits)

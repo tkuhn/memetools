@@ -14,8 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -40,6 +42,9 @@ public class RenderWosGraph {
 
 	@Parameter(names = "-d", description = "The directory to read the raw data from")
 	private File rawWosDataDir;
+
+	@Parameter(names = "-sj", description = "File with the subject mappings")
+	private File subjFile;
 
 	@Parameter(names = "-s", description = "Size of output bitmap")
 	private int size = 10000;
@@ -81,6 +86,10 @@ public class RenderWosGraph {
 
 	private static String wosFolder = "wos";
 
+	private Map<String,Byte> subjectMap;
+	private byte[] categories;
+	private Map<Byte,Color> colorMap;
+
 	private float[] pointsX;
 	private float[] pointsY;
 
@@ -96,6 +105,7 @@ public class RenderWosGraph {
 	public void run() {
 		try {
 			init();
+			readSubjects();
 			readNodes();
 			drawEdges();
 			drawNodes();
@@ -119,6 +129,19 @@ public class RenderWosGraph {
 			rawWosDataDir = new File(MemeUtils.getRawDataDir(), wosFolder);
 		}
 
+		if (subjFile != null) {
+			subjectMap = new HashMap<String,Byte>();
+			categories = new byte[150000000];
+			colorMap = new HashMap<Byte,Color>();
+			colorMap.put((byte) 0, new Color(123, 123, 123, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 1, new Color(255, 0, 0, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 2, new Color(0, 255, 0, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 3, new Color(0, 0, 255, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 4, new Color(255, 255, 0, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 5, new Color(0, 255, 255, (int) (nodeAlpha * 255)));
+			colorMap.put((byte) 6, new Color(255, 0, 255, (int) (nodeAlpha * 255)));
+		}
+
 		pointsX = new float[150000000];
 		pointsY = new float[150000000];
 
@@ -128,6 +151,57 @@ public class RenderWosGraph {
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
+	}
+
+	private void readSubjects() throws IOException {
+		if (subjFile == null) return;
+		readSubjectMap();
+		log("Reading subjects from file: " + subjFile);
+		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
+		int progress = 0;
+		String line;
+		while ((line = r.readLine()) != null) {
+			logProgress(progress);
+			progress++;
+			if (!line.matches("[0-9]+;[A-Z]+")) continue;
+			String[] split = line.split(";", -1);
+			int id = Integer.parseInt(split[0]);
+			String cats = split[1];
+			while (cats.length() > 1) {
+				String cat = cats.substring(0, 2);
+				cats = cats.substring(2);
+				int[] c = new int[7];
+				if (subjectMap.containsKey(cat)) {
+					c[subjectMap.get(cat)]++;
+				}
+				byte mainCat = 0;
+				int mainCatC = 0;
+				for (byte bc = 1; bc < 7; bc++) {
+					if (c[bc] > mainCatC) {
+						mainCatC = c[bc];
+						mainCat = bc;
+					} else if (c[bc] == mainCatC) {
+						mainCat = 0;
+					}
+				}
+				categories[id] = mainCat;
+			}
+		}
+		r.close();
+	}
+
+	private void readSubjectMap() throws IOException {
+		File subjMapFile = new File(MemeUtils.getPreparedDataDir(), "wos-subjects.csv");
+		BufferedReader r = new BufferedReader(new FileReader(subjMapFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		csvReader.read(); // ignore header
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			String wosCat = line.get(0);
+			byte cat = Byte.parseByte(line.get(5).substring(0, 1));
+			subjectMap.put(wosCat, cat);
+		}
+		csvReader.close();
 	}
 
 	private void readNodes() throws IOException {
@@ -156,6 +230,9 @@ public class RenderWosGraph {
 			float x = pointsX[i];
 			if (pointsX[i] == 0) continue;
 			float y = pointsY[i];
+			if (categories != null) {
+				graphics.setColor(colorMap.get(categories[i]));
+			}
 			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale - dotSize/2.0), dotSize, dotSize);
 		}
 	}
