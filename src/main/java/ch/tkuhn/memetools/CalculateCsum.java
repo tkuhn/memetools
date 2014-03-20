@@ -31,6 +31,9 @@ public class CalculateCsum {
 	@Parameter(names = "-n", description = "Number of rows to read")
 	private int number = 1000;
 
+	@Parameter(names = "-s", description = "Skip first s rows")
+	private int skip = 0;
+
 	public static final void main(String[] args) {
 		CalculateCsum obj = new CalculateCsum();
 		JCommander jc = new JCommander(obj);
@@ -73,7 +76,8 @@ public class CalculateCsum {
 		int csum = 0;
 		while ((line = csvReader.read()) != null) {
 			c++;
-			if (c > number) break;
+			if (skip >= c) continue;
+			if (c > number + skip) break;
 			String valStr = line.get(colIndex);
 			if (!valStr.matches("0|1")) {
 				csvReader.close();
