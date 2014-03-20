@@ -160,6 +160,7 @@ public class RenderWosGraph {
 		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
 		int progress = 0;
 		String line;
+		int[] total = new int[7];
 		while ((line = r.readLine()) != null) {
 			logProgress(progress);
 			progress++;
@@ -167,27 +168,31 @@ public class RenderWosGraph {
 			String[] split = line.split(";", -1);
 			int id = Integer.parseInt(split[0]);
 			String cats = split[1];
+			int[] c = new int[7];
 			while (cats.length() > 1) {
 				String cat = cats.substring(0, 2);
 				cats = cats.substring(2);
-				int[] c = new int[7];
 				if (subjectMap.containsKey(cat)) {
 					c[subjectMap.get(cat)]++;
 				}
-				byte mainCat = 0;
-				int mainCatC = 0;
-				for (byte bc = 1; bc < 7; bc++) {
-					if (c[bc] > mainCatC) {
-						mainCatC = c[bc];
-						mainCat = bc;
-					} else if (c[bc] == mainCatC) {
-						mainCat = 0;
-					}
-				}
-				categories[id] = mainCat;
 			}
+			byte mainCat = 0;
+			int mainCatC = 0;
+			for (byte bc = 1; bc < 7; bc++) {
+				if (c[bc] > mainCatC) {
+					mainCatC = c[bc];
+					mainCat = bc;
+				} else if (c[bc] == mainCatC) {
+					mainCat = 0;
+				}
+			}
+			categories[id] = mainCat;
+			total[mainCat]++;
 		}
 		r.close();
+		for (int i = 0; i < 7; i++) {
+			log("Nodes with category " + i + ": " + total[i]);
+		}
 	}
 
 	private void readSubjectMap() throws IOException {
