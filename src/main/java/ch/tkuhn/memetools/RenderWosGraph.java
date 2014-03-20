@@ -157,7 +157,7 @@ public class RenderWosGraph {
 		if (subjFile == null) return;
 		readSubjectMap();
 		log("Reading subjects from file: " + subjFile);
-		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
+		BufferedReader r = new BufferedReader(new FileReader(subjFile), 64*1024);
 		int progress = 0;
 		String line;
 		int[] total = new int[7];
