@@ -94,7 +94,11 @@ public class CalculateCsum {
 
 	private void init() {
 		if (outputFile == null) {
-			outputFile = new File(inputFile.getPath().replaceAll("\\..*$", "") + "-cs.csv");
+			String filename = inputFile.getPath().replaceAll("\\..*$", "") + "-cs";
+			if (skip > 0) {
+				filename += "-s" + skip;
+			}
+			outputFile = new File(filename + ".csv");
 		}
 	}
 
