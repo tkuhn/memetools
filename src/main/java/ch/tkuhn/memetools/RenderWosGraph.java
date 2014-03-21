@@ -46,6 +46,9 @@ public class RenderWosGraph {
 	@Parameter(names = "-sj", description = "File with the subject mappings")
 	private File subjFile;
 
+	@Parameter(names = "-cs", description = "Color scheme for subjects: oecdtop|oecdphys")
+	private String colorScheme;
+
 	@Parameter(names = "-s", description = "Size of output bitmap")
 	private int size = 10000;
 
@@ -203,7 +206,18 @@ public class RenderWosGraph {
 		List<String> line;
 		while ((line = csvReader.read()) != null) {
 			String wosCat = line.get(0);
-			byte cat = Byte.parseByte(line.get(5).substring(0, 1));
+			String oecdCat = line.get(5);
+			byte oecdTop = Byte.parseByte(oecdCat.substring(0, 1));
+			byte cat = 0;
+			if ("oecdtop".equals(colorScheme)) {
+				cat = oecdTop;
+			} else if ("oecdphys".equals(colorScheme)) {
+				if (oecdTop == 1 || oecdTop == 4) cat = 3;
+				if (oecdTop == 2) cat = 6;
+				if (oecdTop == 3) cat = 2;
+				if (oecdTop == 5 || oecdTop == 6) cat = 1;
+				if ("1.3".equals(oecdCat)) cat = 5;
+			}
 			subjectMap.put(wosCat, cat);
 		}
 		csvReader.close();
