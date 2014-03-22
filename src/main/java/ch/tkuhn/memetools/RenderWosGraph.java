@@ -214,8 +214,8 @@ public class RenderWosGraph {
 			} else if ("oecdphys".equals(colorScheme)) {
 				if (oecdTop == 1 || oecdTop == 4) cat = 3;
 				if (oecdTop == 2) cat = 6;
-				if (oecdTop == 3) cat = 2;
-				if (oecdTop == 5 || oecdTop == 6) cat = 1;
+				if (oecdTop == 3) cat = 1;
+				if (oecdTop == 5 || oecdTop == 6) cat = 2;
 				if ("1.3".equals(oecdCat)) cat = 5;
 			}
 			subjectMap.put(wosCat, cat);
