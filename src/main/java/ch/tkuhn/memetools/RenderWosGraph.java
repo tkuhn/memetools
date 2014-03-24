@@ -1,8 +1,6 @@
 package ch.tkuhn.memetools;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -25,6 +23,7 @@ import javax.imageio.ImageIO;
 import org.supercsv.io.CsvListReader;
 
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
+import ch.tkuhn.vilagr.GraphDrawer;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -96,9 +95,7 @@ public class RenderWosGraph {
 	private float[] pointsX;
 	private float[] pointsY;
 
-	private float[][] edgeMap;
-	private BufferedImage image;
-	private Graphics graphics;
+	private GraphDrawer graphDrawer;
 
 	private Set<FileVisitOption> walkFileTreeOptions;
 
@@ -148,9 +145,9 @@ public class RenderWosGraph {
 		pointsX = new float[150000000];
 		pointsY = new float[150000000];
 
-		edgeMap = new float[size][size];
-		image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-		graphics = image.getGraphics();
+		graphDrawer = new GraphDrawer(size);
+		graphDrawer.setEdgeAlpha(edgeAlpha);
+		graphDrawer.setNodeSize(dotSize);
 
 		walkFileTreeOptions = new HashSet<FileVisitOption>();
 		walkFileTreeOptions.add(FileVisitOption.FOLLOW_LINKS);
@@ -241,7 +238,7 @@ public class RenderWosGraph {
 
 	private void drawNodes() {
 		log("Drawing nodes...");
-		graphics.setColor(new Color(0, 0, 255, (int) (nodeAlpha * 255)));
+		Color color = new Color(0, 0, 255, (int) (nodeAlpha * 255));
 		int progress = 0;
 		for (int i = 0 ; i < 150000000 ; i++) {
 			logProgress(progress);
@@ -250,9 +247,9 @@ public class RenderWosGraph {
 			if (pointsX[i] == 0) continue;
 			float y = pointsY[i];
 			if (categories != null) {
-				graphics.setColor(colorMap.get(categories[i]));
+				color = colorMap.get(categories[i]);
 			}
-			graphics.fillOval((int) (x*scale - dotSize/2.0), (int) (size - y*scale - dotSize/2.0), dotSize, dotSize);
+			graphDrawer.drawNode((int) (x*scale), size - (int) (y*scale), color);
 		}
 	}
 
@@ -267,14 +264,7 @@ public class RenderWosGraph {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-		for (int x = 0 ; x < size ; x++) {
-			for (int y = 0 ; y < size ; y++) {
-				int p = 0;
-				float v = edgeMap[x][y];
-				if (v > 0) p = (int) (edgeMap[x][y] * 123 + 1);
-				image.setRGB(x, y, 0xffffff - p * 0x010101);
-			}
-		}
+		graphDrawer.finishEdgeDrawing();
 	}
 
 	private void processEdgesFromFile(Path path) throws IOException {
@@ -306,45 +296,16 @@ public class RenderWosGraph {
 				int y1 = (int) (size - pointsY[id1]*scale);
 				int x2 = (int) (pointsX[id2]*scale);
 				int y2 = (int) (size - pointsY[id2]*scale);
-				if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
-					if (x1 > x2) {
-						int tx1 = x1;
-						x1 = x2;
-						x2 = tx1;
-						int ty1 = y1;
-						y1 = y2;
-						y2 = ty1;
-					}
-					for (int x = x1 ; x <= x2 ; x++) {
-						drawEdgePixel(x, (int) ( ((float) (x - x1) / (x2 - x1)) * (y2 - y1) + y1 ) );
-					}
-				} else {
-					if (y1 > y2) {
-						int tx1 = x1;
-						x1 = x2;
-						x2 = tx1;
-						int ty1 = y1;
-						y1 = y2;
-						y2 = ty1;
-					}
-					for (int y = y1 ; y <= y2 ; y++) {
-						drawEdgePixel((int) ( ((float) (y - y1) / (y2 - y1)) * (x2 - x1) + x1 ), y);
-					}
-				}
+				graphDrawer.recordEdge(x1, y1, x2, y2);
 			}
 		}
 		reader.close();
 		log("Number of errors: " + errors);
 	}
 
-	private void drawEdgePixel(int x, int y) {
-		float v = edgeMap[x][y];
-		edgeMap[x][y] = (float) (v + edgeAlpha - v * edgeAlpha);
-	}
-
 	private void writeImage() throws IOException {
 		log("Writing image to" + outputFile + " ...");
-		ImageIO.write(image, "png", outputFile);
+		ImageIO.write(graphDrawer.getImage(), "png", outputFile);
 	}
 
 	private String getOutputFileName() {
