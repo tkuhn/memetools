@@ -31,7 +31,7 @@ public class CalculateTopHistory {
 	private int stepsPerWindow;
 
 	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 3;
+	private int n = 1;
 
 	@Parameter(names = "-o", description = "Output file")
 	private File outputFile;
@@ -213,7 +213,7 @@ public class CalculateTopHistory {
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
-		String filename = "hi-topms-" + basename + "-w" + windowSize + "-s" + stepSize;
+		String filename = "hi-topms-" + basename + "-n" + n + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
 
