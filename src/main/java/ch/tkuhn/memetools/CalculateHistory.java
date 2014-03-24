@@ -45,7 +45,7 @@ public class CalculateHistory {
 	private String metrics = "ms";
 
 	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 3;
+	private int n = 1;
 
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
@@ -244,7 +244,7 @@ public class CalculateHistory {
 	private String getOutputFileName(String metric) {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
-		String filename = "hi-" + metric + "-" + basename + "-w" + windowSize + "-s" + stepSize;
+		String filename = "hi-" + metric + "-" + basename + "-n" + n + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
 
