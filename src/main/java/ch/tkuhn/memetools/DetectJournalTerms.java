@@ -116,6 +116,8 @@ public class DetectJournalTerms {
 		terms = new HashMap<String, Boolean>();
 		journalSizes = new HashMap<String, Integer>();
 		freqMap = new HashMap<String, Map<String,Integer>>();
+		freqMax = new HashMap<String, Double>();
+		freqMin = new HashMap<String, Double>();
 	}
 
 	private void loadTerms() throws IOException {
