@@ -98,8 +98,8 @@ public class DetectJournalTerms {
 		for (String term : terms.keySet()) {
 			logProgress(t);
 			t++;
-			double absFreqDiff = freqMax.get(t) - freqMin.get(t);
-			double relFreqDiff = freqMax.get(t) / freqMin.get(t);
+			double absFreqDiff = freqMax.get(term) - freqMin.get(term);
+			double relFreqDiff = freqMax.get(term) / freqMin.get(term);
 			csvWriter.write(term, absFreqDiff, relFreqDiff);
 		}
 		csvWriter.close();
