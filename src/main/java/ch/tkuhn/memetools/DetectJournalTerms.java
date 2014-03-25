@@ -35,6 +35,9 @@ public class DetectJournalTerms {
 	@Parameter(names = "-c", description = "Index or name of term file column")
 	private String colIndexOrName = "TERM";
 
+	@Parameter(names = "-s", description = "Threshold for journal size")
+	private int journalSizeThreshold = 0;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -145,7 +148,7 @@ public class DetectJournalTerms {
 			int size = journalSizes.get(journal);
 			log("Journal " + journal + " (" + size + ")");
 			for (String t : terms.keySet()) {
-				double freq = 1 / journalSizes.get(journal);  // Frequency should never be zero
+				double freq = 1.0 / journalSizes.get(journal);  // Frequency should never be zero
 				if (termMap.containsKey(t)) {
 					freq = (double) termMap.get(t) / size;
 				}
@@ -161,7 +164,7 @@ public class DetectJournalTerms {
 	}
 
 	private String getOutputFileName() {
-		return "jd-" + inputFile.getName().replaceAll("\\..*$", "");
+		return "jd-" + inputFile.getName().replaceAll("\\..*$", "") + "-s" + journalSizeThreshold;
 	}
 
 	private void recordNgrams(DataEntry d) {
