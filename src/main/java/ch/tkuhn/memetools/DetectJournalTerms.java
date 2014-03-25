@@ -167,6 +167,11 @@ public class DetectJournalTerms {
 	private void recordNgrams(DataEntry d) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String journal = PrepareApsData.getJournalFromDoi(d.getId());
+		if (journalSizes.containsKey(journal)) {
+			journalSizes.put(journal, journalSizes.get(journal) + 1);
+		} else {
+			journalSizes.put(journal, 1);
+		}
 		String[] tokens = d.getText().trim().split(" ");
 		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
 			String term = "";
@@ -179,11 +184,9 @@ public class DetectJournalTerms {
 				Map<String,Integer> termMap;
 				if (freqMap.containsKey(journal)) {
 					termMap = freqMap.get(journal);
-					journalSizes.put(journal, journalSizes.get(journal) + 1);
 				} else {
 					termMap = new HashMap<String,Integer>();
 					freqMap.put(journal, termMap);
-					journalSizes.put(journal, 1);
 				}
 				if (termMap.containsKey(term)) {
 					termMap.put(term, termMap.get(term) + 1);
