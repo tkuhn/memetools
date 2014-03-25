@@ -146,6 +146,7 @@ public class DetectJournalTerms {
 		for (String journal : freqMap.keySet()) {
 			Map<String,Integer> termMap = freqMap.get(journal);
 			int size = journalSizes.get(journal);
+			if (size < journalSizeThreshold) continue;
 			log("Journal " + journal + " (" + size + ")");
 			for (String t : terms.keySet()) {
 				double freq = 1.0 / journalSizes.get(journal);  // Frequency should never be zero
