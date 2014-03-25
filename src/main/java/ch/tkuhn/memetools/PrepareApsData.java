@@ -412,10 +412,9 @@ public class PrepareApsData {
 		}
 		for (String doi : titles.keySet()) {
 			String year = dates.get(doi).substring(0, 4);
-			String journal = doi.replaceFirst("^10\\.[0-9]+/([^.]+).*$", "$1");
 			w.write("node [\n");
 			w.write("id \"" + doi + "\"\n");
-			w.write("journal \"" + journal + "\"\n");
+			w.write("journal \"" + getJournalFromDoi(doi) + "\"\n");
 			w.write("year \"" + year + "\"\n");
 			if (terms != null) {
 				String text = titles.get(doi);
@@ -439,6 +438,10 @@ public class PrepareApsData {
 		}
 		w.write("]\n");
 		w.close();
+	}
+
+	public static String getJournalFromDoi(String doi) {
+		return doi.replaceFirst("^10\\.[0-9]+/([^.]+).*$", "$1");
 	}
 
 	private void log(Object obj) {

@@ -19,18 +19,15 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-public class DetectTrendTerms {
+public class DetectJournalTerms {
 
-	@Parameter(description = "chronologically-sorted-input-file", required = true)
+	@Parameter(description = "input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
 
 	private File inputFile;
 
 	@Parameter(names = "-o", description = "Output file")
 	private File outputFile;
-
-	@Parameter(names = "-d", description = "Number of documents per period")
-	private int docsPerPeriod = 10000;
 
 	@Parameter(names = "-t", description = "File to load the terms from")
 	private File termFile;
@@ -41,7 +38,7 @@ public class DetectTrendTerms {
 	private File logFile;
 
 	public static final void main(String[] args) {
-		DetectTrendTerms obj = new DetectTrendTerms();
+		DetectJournalTerms obj = new DetectJournalTerms();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -64,25 +61,64 @@ public class DetectTrendTerms {
 	}
 
 	private Map<String,Boolean> terms;
-	private Map<String,Double> absFreqCh;
-	private Map<String,Double> relFreqCh;
-	private Map<String,Integer> thisCount;
-	private Map<String,Integer> lastCount;
+	private Map<String,Integer> journalSizes;
+	private Map<String,Map<String,Integer>> freqMap;
+	private Map<String,Double> freqMax;
+	private Map<String,Double> freqMin;
 
-	private int docsInPeriodCount;
-
-	public DetectTrendTerms() {
+	public DetectJournalTerms() {
 	}
 
 	public void run() throws IOException {
 		init();
+
+		loadTerms();
+
+		int t = 0;
+		log("Extracting terms from input file: " + inputFile);
+		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+		String line;
+		while ((line = reader.readLine()) != null) {
+			t++;
+			logProgress(t);
+			DataEntry d = new DataEntry(line);
+			recordNgrams(d);
+		}
+		reader.close();
+		log("Total number of documents: " + t);
+
+		calculateMinMax();
+
+		log("Writing output...");
+		t = 0;
+		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		Writer w = new BufferedWriter(new FileWriter(csvFile));
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write("TERM", "MAX-ABS-DIFF", "MAX-REL-DIFF");
+		for (String term : terms.keySet()) {
+			logProgress(t);
+			t++;
+			double absFreqDiff = freqMax.get(t) - freqMin.get(t);
+			double relFreqDiff = freqMax.get(t) / freqMin.get(t);
+			csvWriter.write(term, absFreqDiff, relFreqDiff);
+		}
+		csvWriter.close();
+		log("Finished");
+	}
+
+	private void init() {
+		if (outputFile == null) {
+			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		}
+		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 		
 		terms = new HashMap<String, Boolean>();
-		absFreqCh = new HashMap<String,Double>();
-		relFreqCh = new HashMap<String,Double>();
-		thisCount = new HashMap<String,Integer>();
+		journalSizes = new HashMap<String, Integer>();
+		freqMap = new HashMap<String, Map<String,Integer>>();
+	}
 
+	private void loadTerms() throws IOException {
 		log("Loading terms from " + termFile + "...");
 		BufferedReader r = new BufferedReader(new FileReader(termFile));
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
@@ -99,82 +135,36 @@ public class DetectTrendTerms {
 		}
 		csvReader.close();
 		log("Number of terms loaded: " + terms.size());
-
-		int t = 0;
-		docsInPeriodCount = 0;
-		log("Extracting terms from input file: " + inputFile);
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-		String line;
-		while ((line = reader.readLine()) != null) {
-			if (docsInPeriodCount >= docsPerPeriod) {
-				finishPeriod();
-			}
-			t++;
-			logProgress(t);
-			DataEntry d = new DataEntry(line);
-			recordNgrams(d);
-			docsInPeriodCount++;
-		}
-		finishPeriod();
-		reader.close();
-		log("Total number of documents: " + t);
-
-		log("Writing output...");
-		t = 0;
-		File csvFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		Writer w = new BufferedWriter(new FileWriter(csvFile));
-		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-		csvWriter.write("TERM", "MAX-ABS-CHANGE", "MAX-REL-CHANGE");
-		for (String term : terms.keySet()) {
-			logProgress(t);
-			t++;
-			csvWriter.write(term, absFreqCh.get(term), relFreqCh.get(term));
-		}
-		csvWriter.close();
-		log("Finished");
 	}
 
-	private void init() {
-		if (outputFile == null) {
-			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		}
-		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
-	}
-
-	private void finishPeriod() {
-		if (lastCount != null) {
+	private void calculateMinMax() {
+		for (String journal : freqMap.keySet()) {
+			Map<String,Integer> termMap = freqMap.get(journal);
+			int size = journalSizes.get(journal);
+			log("Journal " + journal + " (" + size + ")");
 			for (String t : terms.keySet()) {
-				double lc = 0;
-				if (lastCount.containsKey(t)) lc = lastCount.get(t);
-				double rlc = lc / docsInPeriodCount;
-				double tc = 0;
-				if (thisCount.containsKey(t)) tc = thisCount.get(t);
-				double rtc = (double) tc / docsInPeriodCount;
-				double a = rtc - rlc;
-				if (!absFreqCh.containsKey(t) || absFreqCh.get(t) < a) {
-					absFreqCh.put(t, a);
+				double freq = 1 / journalSizes.get(journal);  // Frequency should never be zero
+				if (termMap.containsKey(t)) {
+					freq = (double) termMap.get(t) / size;
 				}
-				double r = 0;
-				if (rlc != 0) r = rtc / rlc;
-				if (!relFreqCh.containsKey(t) || relFreqCh.get(t) < r) {
-					relFreqCh.put(t, r);
+				if (!freqMin.containsKey(t) || freqMin.get(t) > freq) {
+					freqMin.put(t, freq);
+				}
+				if (!freqMax.containsKey(t) || freqMax.get(t) < freq) {
+					freqMax.put(t, freq);
 				}
 			}
+			
 		}
-		lastCount = thisCount;
-		thisCount = new HashMap<String,Integer>();
-		docsInPeriodCount = 0;
 	}
 
 	private String getOutputFileName() {
-		String basename = inputFile.getName().replaceAll("\\..*$", "");
-		basename = basename.replace("-chronologic", "");
-		String filename = "ch-" + basename + "-d" + docsPerPeriod;
-		return filename;
+		return "jd-" + inputFile.getName().replaceAll("\\..*$", "");
 	}
 
 	private void recordNgrams(DataEntry d) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
+		String journal = PrepareApsData.getJournalFromDoi(d.getId());
 		String[] tokens = d.getText().trim().split(" ");
 		for (int p1 = 0 ; p1 < tokens.length ; p1++) {
 			String term = "";
@@ -184,10 +174,19 @@ public class DetectTrendTerms {
 				if (!terms.containsKey(term)) break;
 				if (processed.containsKey(term)) continue;
 				processed.put(term, true);
-				if (thisCount.containsKey(term)) {
-					thisCount.put(term, thisCount.get(term) + 1);
+				Map<String,Integer> termMap;
+				if (freqMap.containsKey(journal)) {
+					termMap = freqMap.get(journal);
+					journalSizes.put(journal, journalSizes.get(journal) + 1);
 				} else {
-					thisCount.put(term, 1);
+					termMap = new HashMap<String,Integer>();
+					freqMap.put(journal, termMap);
+					journalSizes.put(journal, 1);
+				}
+				if (termMap.containsKey(term)) {
+					termMap.put(term, termMap.get(term) + 1);
+				} else {
+					termMap.put(term, 1);
 				}
 			}
 		}
