@@ -38,6 +38,9 @@ public class DetectJournalTerms {
 	@Parameter(names = "-s", description = "Threshold for journal size")
 	private int journalSizeThreshold = 0;
 
+	@Parameter(names = "-i", description = "Ignore old journals (PhysRevSeriesI and PhysRev)")
+	private boolean ignoreOldJournals = false;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -144,9 +147,10 @@ public class DetectJournalTerms {
 
 	private void calculateMinMax() {
 		for (String journal : freqMap.keySet()) {
-			Map<String,Integer> termMap = freqMap.get(journal);
+			if (ignoreOldJournals && journal.matches("PhysRevSeriesI|PhysRev")) continue;
 			int size = journalSizes.get(journal);
 			if (size < journalSizeThreshold) continue;
+			Map<String,Integer> termMap = freqMap.get(journal);
 			log("Journal " + journal + " (" + size + ")");
 			for (String t : terms.keySet()) {
 				double freq = 1.0 / journalSizes.get(journal);  // Frequency should never be zero
@@ -165,7 +169,9 @@ public class DetectJournalTerms {
 	}
 
 	private String getOutputFileName() {
-		return "jd-" + inputFile.getName().replaceAll("\\..*$", "") + "-s" + journalSizeThreshold;
+		String filename = "jd-" + inputFile.getName().replaceAll("\\..*$", "") + "-s" + journalSizeThreshold;
+		if (ignoreOldJournals) filename += "-i";
+		return filename;
 	}
 
 	private void recordNgrams(DataEntry d) {
