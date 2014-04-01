@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.Set;
 
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
+import ch.tkuhn.vilagr.CoordIterator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -128,44 +129,21 @@ public class LayoutWosGraph {
 		random = new Random(0);
 	}
 
-	private static final String idPattern = "^\\s*<node id=\"([0-9]{9})\".*$";
-	private static final String coordPattern = "^\\s*<viz:position x=\"(.*?)\" y=\"(.*?)\".*$";
-
 	private void readBasePoints() throws IOException {
 		log("Reading base points from gext file: " + inputFile);
-		BufferedReader reader = new BufferedReader(new FileReader(inputFile), 64*1024);
-		int errors = 0;
-		String line;
-		String id = null;
-		while ((line = reader.readLine()) != null) {
-			if (line.matches(idPattern)) {
-				if (id != null) {
-					errors++;
-					logDetail("No coordinates found for: " + id);
-				}
-				id = line.replaceFirst(idPattern, "$1");
-			} else if (line.matches(coordPattern)) {
-				if (id == null) {
-					errors++;
-					logDetail("No ID found for coordinates: " + line);
-				} else {
-					float posX = Float.parseFloat(line.replaceFirst(coordPattern, "$1"));
-					float posY = Float.parseFloat(line.replaceFirst(coordPattern, "$2"));
-					addPosition(id, posX + offset, posY + offset);
-					id = null;
-				}
+		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
+			
+			@Override
+			public void handleCoord(String nodeId, float x, float y) throws Exception {
+				addPosition(nodeId, x + offset, y + offset);
 			}
-		}
+
+		});
+		ci.run();
 		pointsX = morePointsX;
 		pointsY = morePointsY;
 		morePointsX = new float[150000000];
 		morePointsY = new float[150000000];
-		if (id != null) {
-			errors++;
-			logDetail("No coordinates found for: " + id);
-		}
-		reader.close();
-		log("Number of errors: " + errors);
 	}
 
 	private void retrieveMorePoints(final int minConnections) throws IOException {

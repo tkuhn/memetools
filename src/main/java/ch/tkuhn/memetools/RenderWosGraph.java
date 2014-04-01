@@ -23,6 +23,7 @@ import javax.imageio.ImageIO;
 import org.supercsv.io.CsvListReader;
 
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
+import ch.tkuhn.vilagr.CoordIterator;
 import ch.tkuhn.vilagr.GraphDrawer;
 
 import com.beust.jcommander.JCommander;
@@ -223,18 +224,17 @@ public class RenderWosGraph {
 
 	private void readNodes() throws IOException {
 		log("Processing nodes from input file: " + inputFile);
-		BufferedReader r = new BufferedReader(new FileReader(inputFile), 64*1024);
-		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
-		int progress = 0;
-		List<String> line;
-		while ((line = csvReader.read()) != null) {
-			logProgress(progress);
-			progress++;
-			int id = Integer.parseInt(line.get(0));
-			pointsX[id] = Float.parseFloat(line.get(1));
-			pointsY[id] = Float.parseFloat(line.get(2));
-		}
-		csvReader.close();
+		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
+			
+			@Override
+			public void handleCoord(String nodeId, float x, float y) throws Exception {
+				int id = Integer.parseInt(nodeId);
+				pointsX[id] = x;
+				pointsY[id] = y;
+			}
+
+		});
+		ci.run();
 	}
 
 	private void drawNodes() {
