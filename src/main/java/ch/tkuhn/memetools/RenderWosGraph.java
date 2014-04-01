@@ -146,6 +146,7 @@ public class RenderWosGraph {
 		pointsY = new float[150000000];
 
 		graphDrawer = new GraphDrawer(size);
+		graphDrawer.setTransformation(0, scale, true);
 		graphDrawer.setEdgeAlpha(edgeAlpha);
 		graphDrawer.setNodeSize(dotSize);
 
@@ -249,7 +250,7 @@ public class RenderWosGraph {
 			if (categories != null) {
 				color = colorMap.get(categories[i]);
 			}
-			graphDrawer.drawNode((int) (x*scale), size - (int) (y*scale), color);
+			graphDrawer.drawNode(x, y, color);
 		}
 	}
 
@@ -292,11 +293,7 @@ public class RenderWosGraph {
 				neighborIds = neighborIds.substring(9);
 				if (pointsX[id2] == 0) continue;
 				// draw line
-				int x1 = (int) (pointsX[id1]*scale);
-				int y1 = (int) (size - pointsY[id1]*scale);
-				int x2 = (int) (pointsX[id2]*scale);
-				int y2 = (int) (size - pointsY[id2]*scale);
-				graphDrawer.recordEdge(x1, y1, x2, y2);
+				graphDrawer.recordEdge(pointsX[id1], pointsY[id1], pointsX[id2], pointsY[id2]);
 			}
 		}
 		reader.close();
