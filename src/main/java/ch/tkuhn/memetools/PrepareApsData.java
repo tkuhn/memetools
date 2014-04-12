@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.supercsv.io.CsvListReader;
@@ -58,6 +59,9 @@ public class PrepareApsData {
 	@Parameter(names = "-rw", description = "Randomize graph within time window (keeping time structure mostly intact)")
 	private int randomizeTimeWindow = 0;
 
+	@Parameter(names = "-rs", description = "Seed for randomization")
+	private Long randomSeed;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -82,6 +86,7 @@ public class PrepareApsData {
 	private Map<String,List<String>> references;
 
 	private Map<String,String> randomizedDois;
+	private Random random;
 
 	private List<String> terms;
 
@@ -127,6 +132,11 @@ public class PrepareApsData {
 
 		if (randomize) {
 			randomizedDois = new HashMap<String,String>();
+			if (randomSeed == null) {
+				random = new Random();
+			} else {
+				random = new Random(randomSeed);
+			}
 		}
 	}
 
@@ -322,12 +332,16 @@ public class PrepareApsData {
 			randomizeDois();
 		}
 		log("Writing data files...");
-		String fileSuffix = ".txt";
+		String fileSuffix = "";
 		if (randomizeTimeWindow > 0) {
-			fileSuffix = "-randomized" + randomizeTimeWindow + ".txt";
+			fileSuffix = "-randomized" + randomizeTimeWindow;
 		} else if (randomize) {
-			fileSuffix = "-randomized.txt";
+			fileSuffix = "-randomized";
 		}
+		if (randomize && randomSeed != null) {
+			fileSuffix += "-s" + randomSeed;
+		}
+		fileSuffix += ".txt";
 		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T" + fileSuffix);
 		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA" + fileSuffix);
 		int noAbstracts = 0;
@@ -378,7 +392,7 @@ public class PrepareApsData {
 			randomizeDois(dois);
 		} else {
 			List<String> doisOut = new ArrayList<String>(titles.keySet());
-			Collections.shuffle(doisOut);
+			Collections.shuffle(doisOut, random);
 			int i = 0;
 			for (String doiIn : titles.keySet()) {
 				randomizedDois.put(doiIn, doisOut.get(i));
@@ -389,7 +403,7 @@ public class PrepareApsData {
 
 	private void randomizeDois(List<String> dois) {
 		List<String> doisShuffled = new ArrayList<String>(dois);
-		Collections.shuffle(doisShuffled);
+		Collections.shuffle(doisShuffled, random);
 		int i = 0;
 		for (String doiIn : dois) {
 			randomizedDois.put(doiIn, doisShuffled.get(i));
