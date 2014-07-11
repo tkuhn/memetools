@@ -7,7 +7,7 @@ public class MemeScorer {
 
 	public static final int FAST_SCREEN_MODE = 0;
 	public static final int DECOMPOSED_SCREEN_MODE = 1;
-	public static final int GIVEN_TERMLIST_MODE = 1;
+	public static final int GIVEN_TERMLIST_MODE = 2;
 
 	private int mode;
 
