@@ -3,7 +3,13 @@ Meme Tools
 
 Code for calculating meme scores and more.
 
-*(this code is work in progress)*
+*This code is work-in-progress.*
+
+
+Publication
+-----------
+
+See this preprint paper: http://arxiv.org/abs/1404.3757
 
 
 Directory Structure
