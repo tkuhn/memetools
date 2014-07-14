@@ -3,6 +3,8 @@ Meme Tools
 
 Code for calculating meme scores and more.
 
+*(this code is work in progress)*
+
 
 Directory Structure
 -------------------
@@ -27,3 +29,9 @@ Directory with output data:
 Log directory:
 
     log/
+
+
+License
+-------
+
+This is free software under the MIT License. See LICENSE.txt.
