@@ -415,7 +415,12 @@ public class PrepareApsData {
 	private void writeGmlFile() throws IOException {
 		if (skipGml || randomize) return;
 		log("Writing GML file...");
-		File file = new File(MemeUtils.getPreparedDataDir(), "aps.gml");
+		String filename = "aps";
+		if (termsFile != null) {
+			filename += "-t";
+			if (termCount > 0) filename += termCount;
+		}
+		File file = new File(MemeUtils.getPreparedDataDir(), filename + ".gml");
 		BufferedWriter w = new BufferedWriter(new FileWriter(file));
 		w.write("graph [\n");
 		w.write("directed 1\n");
