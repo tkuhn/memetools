@@ -99,7 +99,9 @@ public class PrepareApsData {
 		init();
 		try {
 			processMetadataDir();
-			processAbstractDir();
+			if ((!skipData && !skipDataTA) || termsFile != null) {
+				processAbstractDir();
+			}
 			processCitationFile();
 			readTerms();
 			writeDataFiles();
@@ -416,7 +418,7 @@ public class PrepareApsData {
 		if (skipGml || randomize) return;
 		log("Writing GML file...");
 		String filename = "aps";
-		if (termsFile != null) {
+		if (terms != null) {
 			filename += "-t";
 			if (termCount > 0) filename += termCount;
 		}
