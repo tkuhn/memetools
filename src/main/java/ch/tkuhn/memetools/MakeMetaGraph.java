@@ -22,8 +22,11 @@ public class MakeMetaGraph {
 
 	private File inputFile;
 
-	@Parameter(names = "-o", description = "Output file")
+	@Parameter(names = "-g", description = "Output file (in GEXF format)")
 	private File outputFile;
+
+	@Parameter(names = "-m", description = "Output file for type map")
+	private File typeMapFile;
 
 	@Parameter(names = "-t", description = "Name of type attribute that partitions the graph")
 	private String typeAtt = "type";
@@ -65,6 +68,13 @@ public class MakeMetaGraph {
 	public void run() throws IOException {
 		init();
 
+		final BufferedWriter typeMapWriter;
+		if (typeMapFile != null) {
+			typeMapWriter = new BufferedWriter(new FileWriter(typeMapFile));
+		} else {
+			typeMapWriter = null;
+		}
+
 		log("Calculating meta-graph...");
 		GraphIterator ei = new GraphIterator(inputFile, new GraphIterator.GraphHandler() {
 
@@ -76,6 +86,9 @@ public class MakeMetaGraph {
 					typeCount.put(type, typeCount.get(type) + 1);
 				} else {
 					typeCount.put(type, 1);
+				}
+				if (typeMapWriter != null) {
+					typeMapWriter.write(nodeId + " " + type + "\n");
 				}
 			}
 
@@ -102,6 +115,9 @@ public class MakeMetaGraph {
 
 		});
 		ei.run();
+		if (typeMapWriter != null) {
+			typeMapWriter.close();
+		}
 
 		log("Writing GML file...");
 		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));

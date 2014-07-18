@@ -209,8 +209,6 @@ public class CalculateHistory {
 			outputLine.add(date);
 			outputLines.add(outputLine);
 		}
-		List<String> outputLine = new ArrayList<String>();
-		outputLine.add(date);
 		for (String term : terms) {
 			int mmVal = 0, mVal = 0, xmVal = 0, xVal = 0, fVal = 0;
 			for (MemeScorer m : ms) {
