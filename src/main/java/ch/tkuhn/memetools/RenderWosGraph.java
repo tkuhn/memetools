@@ -227,7 +227,7 @@ public class RenderWosGraph {
 		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
 			
 			@Override
-			public void handleCoord(String nodeId, float x, float y) throws Exception {
+			public void handleCoord(String nodeId, String type, String attributes, float x, float y) throws Exception {
 				int id = Integer.parseInt(nodeId);
 				pointsX[id] = x;
 				pointsY[id] = y;

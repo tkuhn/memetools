@@ -134,7 +134,7 @@ public class LayoutWosGraph {
 		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
 			
 			@Override
-			public void handleCoord(String nodeId, float x, float y) throws Exception {
+			public void handleCoord(String nodeId, String type, String attributes, float x, float y) throws Exception {
 				addPosition(nodeId, x + offset, y + offset);
 			}
 
