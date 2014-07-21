@@ -204,22 +204,16 @@ public class CalculateCommMemes {
 	private void analyzeData() {
 		for (String term : terms) {
 			int tf = termFreq.get(term);
-			float overlap = 0;
-			String topComm = null;
 			for (String comm : communitySequence) {
 				int cf = commFreq.get(comm);
 				int tcf = 0;
 				if (termCommFreq.get(term).containsKey(comm)) {
 					tcf = termCommFreq.get(term).get(comm);
 				}
-				float o = (float) tcf / (cf + tf - tcf);
-				if (o > overlap) {
-					overlap = o;
-					topComm = comm;
+				float overlap = (float) tcf / (cf + tf - tcf);
+				if (overlap > 0) {
+					commTopMemes.get(comm).add(Pair.of(term, overlap));
 				}
-			}
-			if (topComm != null) {
-				commTopMemes.get(topComm).add(Pair.of(term, overlap));
 			}
 		}
 	}
