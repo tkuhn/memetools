@@ -34,7 +34,7 @@ public class CalculateCommHistory {
 
 	private int stepsPerWindow;
 
-	@Parameter(names = "-m", description = "File community map", required = true)
+	@Parameter(names = "-m", description = "Community map file", required = true)
 	private File communityMapFile;
 
 	@Parameter(names = "-v", description = "Write detailed log")
