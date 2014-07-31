@@ -1,13 +1,17 @@
 package ch.tkuhn.memetools;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.supercsv.io.CsvListReader;
 
 import ch.tkuhn.vilagr.GraphIterator;
 
@@ -21,6 +25,9 @@ public class MakeMetaGraph {
 	private List<String> parameters = new ArrayList<String>();
 
 	private File inputFile;
+
+	@Parameter(names = "-l", description = "Label file")
+	private File labelFile;
 
 	@Parameter(names = "-g", description = "Output file (in GEXF format)")
 	private File outputFile;
@@ -61,6 +68,7 @@ public class MakeMetaGraph {
 	private Map<String,String> nodeTypes = new HashMap<String,String>();
 	private Map<String,Integer> typeCount = new HashMap<String,Integer>();
 	private Map<String,Map<String,Integer>> typeEdges = new HashMap<String,Map<String,Integer>>();
+	private Map<String,String> labelMap = new HashMap<String,String>();
 
 	public MakeMetaGraph() {
 	}
@@ -127,6 +135,9 @@ public class MakeMetaGraph {
 			w.write("node [\n");
 			w.write("id \"" + t + "\"\n");
 			w.write("weight " + typeCount.get(t) + "\n");
+			if (labelMap.containsKey(t)) {
+				w.write("label \"" + labelMap.get(t) + "\"\n");
+			}
 			w.write("]\n");
 		}
 		for (String t1 : typeEdges.keySet()) {
@@ -152,6 +163,23 @@ public class MakeMetaGraph {
 			String filename = inputFile.getPath().replaceAll("\\..*$", "") + "-meta";
 			outputFile = new File(filename + ".gml");
 		}
+		if (labelFile != null) {
+			try {
+				readLabels();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	private void readLabels() throws IOException {
+		BufferedReader r = new BufferedReader(new FileReader(labelFile));
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			labelMap.put(line.get(0), line.get(1));
+		}
+		csvReader.close();
 	}
 
 	private void log(Object obj) {
