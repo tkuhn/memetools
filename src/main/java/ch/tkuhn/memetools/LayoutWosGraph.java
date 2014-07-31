@@ -1,5 +1,6 @@
 package ch.tkuhn.memetools;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,11 +18,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
-import ch.tkuhn.vilagr.CoordIterator;
+import ch.tkuhn.vilagr.GraphIterator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -131,15 +135,19 @@ public class LayoutWosGraph {
 
 	private void readBasePoints() throws IOException {
 		log("Reading base points from gext file: " + inputFile);
-		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
-			
+		GraphIterator gi = new GraphIterator(inputFile, new GraphIterator.GraphHandler() {
+
 			@Override
-			public void handleCoord(String nodeId, String type, String attributes, float x, float y) throws Exception {
-				addPosition(nodeId, x + offset, y + offset);
+			public void handleNode(String nodeId, Pair<Float,Float> coords, Color color, Map<String,String> atts) throws Exception {
+				addPosition(nodeId, coords.getLeft() + offset, coords.getRight() + offset);
+				
 			}
 
+			@Override
+			public void handleEdge(String arg0, String arg1) throws Exception {}
+
 		});
-		ci.run();
+		gi.run();
 		pointsX = morePointsX;
 		pointsY = morePointsY;
 		morePointsX = new float[150000000];

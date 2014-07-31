@@ -1,5 +1,6 @@
 package ch.tkuhn.memetools;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.supercsv.io.CsvListReader;
 
 import ch.tkuhn.vilagr.GraphIterator;
@@ -67,6 +69,8 @@ public class MakeMetaGraph {
 
 	private Map<String,String> nodeTypes = new HashMap<String,String>();
 	private Map<String,Integer> typeCount = new HashMap<String,Integer>();
+	private Map<String,Pair<Float,Float>> typeCoords = new HashMap<String,Pair<Float,Float>>();
+	private Map<String,Color> typeColors = new HashMap<String,Color>();
 	private Map<String,Map<String,Integer>> typeEdges = new HashMap<String,Map<String,Integer>>();
 	private Map<String,String> labelMap = new HashMap<String,String>();
 
@@ -87,13 +91,22 @@ public class MakeMetaGraph {
 		GraphIterator ei = new GraphIterator(inputFile, new GraphIterator.GraphHandler() {
 
 			@Override
-			public void handleNode(String nodeId, Map<String,String> atts) throws Exception {
+			public void handleNode(String nodeId, Pair<Float,Float> coords, Color color, Map<String,String> atts) throws Exception {
 				String type = atts.get(typeAtt);
 				nodeTypes.put(nodeId, type);
 				if (typeCount.containsKey(type)) {
 					typeCount.put(type, typeCount.get(type) + 1);
 				} else {
 					typeCount.put(type, 1);
+				}
+				if (typeCoords.containsKey(type)) {
+					Pair<Float,Float> c = typeCoords.get(type);
+					typeCoords.put(type, Pair.of(c.getLeft() + coords.getLeft(), c.getRight() + coords.getRight()));
+				} else  {
+					typeCoords.put(type, coords);
+				}
+				if (color != null) {
+					typeColors.put(type, color);
 				}
 				if (typeMapWriter != null) {
 					typeMapWriter.write(nodeId + " " + type + "\n");
@@ -132,9 +145,21 @@ public class MakeMetaGraph {
 		w.write("graph [\n");
 		w.write("directed 1\n");
 		for (String t : typeCount.keySet()) {
+			int count = typeCount.get(t);
 			w.write("node [\n");
 			w.write("id \"" + t + "\"\n");
-			w.write("weight " + typeCount.get(t) + "\n");
+			w.write("weight " + count + "\n");
+			w.write("graphics [\n");
+			float x = typeCoords.get(t).getLeft() / count;
+			float y = typeCoords.get(t).getRight() / count;
+			w.write("center [ x " + x + " y " + y + " ]\n");
+			w.write("w " + Math.sqrt(count) + "\n");
+			w.write("h " + Math.sqrt(count) + "\n");
+			Color color = typeColors.get(t);
+			if (color != null) {
+				w.write("fill \"#" + String.format("%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()) + "\"\n");
+			}
+			w.write("]\n");
 			if (labelMap.containsKey(t)) {
 				w.write("label \"" + labelMap.get(t) + "\"\n");
 			}

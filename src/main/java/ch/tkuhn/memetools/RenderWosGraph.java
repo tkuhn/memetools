@@ -20,11 +20,12 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.supercsv.io.CsvListReader;
 
 import ch.tkuhn.memetools.PrepareWosData.WosEntry;
-import ch.tkuhn.vilagr.CoordIterator;
 import ch.tkuhn.vilagr.GraphDrawer;
+import ch.tkuhn.vilagr.GraphIterator;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -224,17 +225,22 @@ public class RenderWosGraph {
 
 	private void readNodes() throws IOException {
 		log("Processing nodes from input file: " + inputFile);
-		CoordIterator ci = new CoordIterator(inputFile, new CoordIterator.CoordHandler() {
-			
+		GraphIterator gi = new GraphIterator(inputFile, new GraphIterator.GraphHandler() {
+
 			@Override
-			public void handleCoord(String nodeId, String type, String attributes, float x, float y) throws Exception {
+			public void handleNode(String nodeId, Pair<Float,Float> coords, Color color, Map<String,String> atts) throws Exception {
 				int id = Integer.parseInt(nodeId);
-				pointsX[id] = x;
-				pointsY[id] = y;
+				pointsX[id] = coords.getLeft();
+				pointsY[id] = coords.getRight();
+				
 			}
 
+			@Override
+			public void handleEdge(String arg0, String arg1) throws Exception {}
+
 		});
-		ci.run();
+		gi.setEdgeHandlingEnabled(false);
+		gi.run();
 	}
 
 	private void drawNodes() {
