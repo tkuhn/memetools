@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.supercsv.io.CsvListReader;
+import org.supercsv.io.CsvListWriter;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -220,11 +221,12 @@ public class CalculateCommMemes {
 
 	private void writeOutput() throws IOException {
 		log("Writing result to output file...");
-		File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".txt");
-		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
+		File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		CsvListWriter csvWriter = new CsvListWriter(new BufferedWriter(new FileWriter(outputFile)), MemeUtils.getCsvPreference());
 
 		for (String comm : communitySequence) {
-			w.write(comm);
+			List<Object> row = new ArrayList<Object>();
+			row.add(comm);
 			List<Pair<String,Float>> memes = new ArrayList<Pair<String,Float>>(commTopMemes.get(comm));
 			Collections.sort(memes, new Comparator<Pair<String,Float>>() {
 				@Override
@@ -235,13 +237,14 @@ public class CalculateCommMemes {
 			int n = 0;
 			for (Pair<String,Float> m : memes) {
 				n++;
-				if (n > 3 && m.getRight() < 0.1) break;
-				w.write(" | " + m.getLeft() + " (" + (int) (m.getRight() * 100) + "%)");
+				if (n > 3 && m.getRight() < 0.05) break;
+				row.add(m.getLeft());
+				row.add(m.getRight());
 			}
-			w.write("\n");
+			csvWriter.write(row);
 		}
 
-		w.close();
+		csvWriter.close();
 	}
 
 	private String getOutputFileName() {
