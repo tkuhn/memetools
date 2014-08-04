@@ -26,6 +26,9 @@ public class CalculateCommHistory {
 
 	private File inputFile;
 
+	@Parameter(names = "-o", description = "Output file")
+	private File outputFile;
+
 	@Parameter(names = "-w", description = "Window size", required = true)
 	private int windowSize;
 
@@ -125,7 +128,9 @@ public class CalculateCommHistory {
 	private void processAndWriteData() throws IOException {
 		log("Processing data from " + inputFile + " and writing result to output files...");
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-		File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		if (outputFile == null) {
+			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		}
 		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
 		csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 
