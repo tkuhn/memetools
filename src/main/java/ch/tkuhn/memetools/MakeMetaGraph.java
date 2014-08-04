@@ -31,7 +31,7 @@ public class MakeMetaGraph {
 	@Parameter(names = "-l", description = "Label file")
 	private File labelFile;
 
-	@Parameter(names = "-g", description = "Output file (in GEXF format)")
+	@Parameter(names = "-g", description = "Output file (in GML format)")
 	private File outputFile;
 
 	@Parameter(names = "-m", description = "Output file for type map")
@@ -140,54 +140,52 @@ public class MakeMetaGraph {
 			typeMapWriter.close();
 		}
 
-		log("Writing GML file...");
-		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
-		w.write("graph [\n");
-		w.write("directed 1\n");
-		for (String t : typeCount.keySet()) {
-			int count = typeCount.get(t);
-			w.write("node [\n");
-			w.write("id \"" + t + "\"\n");
-			w.write("weight " + count + "\n");
-			w.write("graphics [\n");
-			float x = typeCoords.get(t).getLeft() / count;
-			float y = typeCoords.get(t).getRight() / count;
-			w.write("center [ x " + x + " y " + y + " ]\n");
-			w.write("w " + Math.sqrt(count) + "\n");
-			w.write("h " + Math.sqrt(count) + "\n");
-			Color color = typeColors.get(t);
-			if (color != null) {
-				w.write("fill \"#" + String.format("%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()) + "\"\n");
-			}
-			w.write("]\n");
-			if (labelMap.containsKey(t)) {
-				w.write("label \"" + labelMap.get(t) + "\"\n");
-			}
-			w.write("]\n");
-		}
-		for (String t1 : typeEdges.keySet()) {
-			for (String t2 : typeEdges.get(t1).keySet()) {
-				if (ignoreWithinCitations && t1.equals(t2)) {
-					continue;
+		if (outputFile != null) {
+			log("Writing GML file...");
+			BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
+			w.write("graph [\n");
+			w.write("directed 1\n");
+			for (String t : typeCount.keySet()) {
+				int count = typeCount.get(t);
+				w.write("node [\n");
+				w.write("id \"" + t + "\"\n");
+				w.write("weight " + count + "\n");
+				w.write("graphics [\n");
+				float x = typeCoords.get(t).getLeft() / count;
+				float y = typeCoords.get(t).getRight() / count;
+				w.write("center [ x " + x + " y " + y + " ]\n");
+				w.write("w " + Math.sqrt(count) + "\n");
+				w.write("h " + Math.sqrt(count) + "\n");
+				Color color = typeColors.get(t);
+				if (color != null) {
+					w.write("fill \"#" + String.format("%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()) + "\"\n");
 				}
-				int c = typeEdges.get(t1).get(t2);
-				w.write("edge [\n");
-				w.write("source \"" + t1 + "\"\n");
-				w.write("target \"" + t2 + "\"\n");
-				w.write("weight " +c + "\n");
+				w.write("]\n");
+				if (labelMap.containsKey(t)) {
+					w.write("label \"" + labelMap.get(t) + "\"\n");
+				}
 				w.write("]\n");
 			}
+			for (String t1 : typeEdges.keySet()) {
+				for (String t2 : typeEdges.get(t1).keySet()) {
+					if (ignoreWithinCitations && t1.equals(t2)) {
+						continue;
+					}
+					int c = typeEdges.get(t1).get(t2);
+					w.write("edge [\n");
+					w.write("source \"" + t1 + "\"\n");
+					w.write("target \"" + t2 + "\"\n");
+					w.write("weight " +c + "\n");
+					w.write("]\n");
+				}
+			}
+			w.write("]\n");
+			w.close();
 		}
-		w.write("]\n");
-		w.close();
 	}
 
 	private void init() {
 		logFile = new File(MemeUtils.getLogDir(), "make-meta-graph.log");
-		if (outputFile == null) {
-			String filename = inputFile.getPath().replaceAll("\\..*$", "") + "-meta";
-			outputFile = new File(filename + ".gml");
-		}
 		if (labelFile != null) {
 			try {
 				readLabels();
