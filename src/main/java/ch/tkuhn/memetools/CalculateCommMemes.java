@@ -28,6 +28,9 @@ public class CalculateCommMemes {
 
 	private File inputFile;
 
+	@Parameter(names = "-o", description = "Output file")
+	private File outputFile;
+
 	@Parameter(names = "-t", description = "File with terms", required = true)
 	private File termsFile;
 
@@ -223,7 +226,9 @@ public class CalculateCommMemes {
 
 	private void writeOutput() throws IOException {
 		log("Writing result to output file...");
-		File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		if (outputFile == null) {
+			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		}
 		CsvListWriter csvWriter = new CsvListWriter(new BufferedWriter(new FileWriter(outputFile)), MemeUtils.getCsvPreference());
 
 		for (String comm : communitySequence) {
