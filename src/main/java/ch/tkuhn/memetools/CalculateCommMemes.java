@@ -40,6 +40,9 @@ public class CalculateCommMemes {
 	@Parameter(names = "-m", description = "Community map file", required = true)
 	private File communityMapFile;
 
+	@Parameter(names = "-s", description = "Scoring metric: fscore, overlap")
+	private String scoreMetric = "fscore";
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -211,9 +214,22 @@ public class CalculateCommMemes {
 				if (termCommFreq.get(term).containsKey(comm)) {
 					tcf = termCommFreq.get(term).get(comm);
 				}
-				float overlap = (float) tcf / (cf + tf - tcf);
-				if (overlap > 0) {
-					commTopMemes.get(comm).add(Pair.of(term, overlap));
+				float score;
+				if (scoreMetric.equals("overlap")) {
+					score = (float) tcf / (cf + tf - tcf);
+				} else if (scoreMetric.equals("fscore")) {
+					if (tf == 0 || cf == 0 || tcf == 0) {
+						score = 0;
+					} else {
+						float prec = (float) tcf / tf;
+						float rec = (float) tcf / cf;
+						score = 2 * prec * rec / (prec + rec);
+					}
+				} else {
+					throw new RuntimeException("Unknown scoring metric: " + scoreMetric);
+				}
+				if (score > 0) {
+					commTopMemes.get(comm).add(Pair.of(term, score));
 				}
 			}
 		}
