@@ -108,15 +108,15 @@ public class MemeScorer {
 		return t - m.get(term);
 	}
 
-	public double[] calculateMemeScoreValues(String term, int n) {
-		return calculateMemeScoreValues(getMM(term), getM(term), getXM(term), getX(term), getF(term), n);
+	public double[] calculateMemeScoreValues(String term, int delta) {
+		return calculateMemeScoreValues(getMM(term), getM(term), getXM(term), getX(term), getF(term), delta);
 	}
 
-	public static double[] calculateMemeScoreValues(int mmVal, int mVal, int xmVal, int xVal, int fVal, int n) {
+	public static double[] calculateMemeScoreValues(int mmVal, int mVal, int xmVal, int xVal, int fVal, int delta) {
 		int t = xVal + mVal;
 		double rfVal = (double) fVal / t;
-		double stick = (double) mmVal / (mVal + n);
-		double spark = (double) (xmVal + n) / (xVal + n);
+		double stick = (double) mmVal / (mVal + delta);
+		double spark = (double) (xmVal + delta) / (xVal + delta);
 		double ps = stick / spark;
 		double ms = ps * rfVal;
 		return new double[] {stick, spark, ps, ms};

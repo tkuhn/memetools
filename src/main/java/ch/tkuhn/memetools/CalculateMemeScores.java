@@ -36,8 +36,8 @@ public class CalculateMemeScores {
 	@Parameter(names = "-ye", description = "Calculate scores for time period with given end year")
 	private Integer yearEnd;
 
-	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 3;
+	@Parameter(names = "-d", description = "Set delta parameter (controlled noise level)")
+	private int delta = 3;
 
 	private File logFile;
 
@@ -143,12 +143,12 @@ public class CalculateMemeScores {
 		Writer w = new BufferedWriter(new FileWriter(outputFile));
 		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 		csvWriter.write("TERM", "ABSFREQ", "RELFREQ", "MM", "M",
-				"XM", "X", "STICK-" + n, "SPARK-" + n, "PS-" + n, "MS-" + n);
+				"XM", "X", "STICK-" + delta, "SPARK-" + delta, "PS-" + delta, "MS-" + delta);
 		int progress = 0;
 		for (String t : ms.getF().keySet()) {
 			progress++;
 			logProgress(progress);
-			double[] v = ms.calculateMemeScoreValues(t, n);
+			double[] v = ms.calculateMemeScoreValues(t, delta);
 			csvWriter.write(t, ms.getF(t), ms.getRelF(t), ms.getMM(t), ms.getM(t), ms.getXM(t), ms.getX(t), v[0], v[1], v[2], v[3]);
 		}
 		csvWriter.close();
@@ -166,10 +166,10 @@ public class CalculateMemeScores {
 		int mCol = line.indexOf("M");
 		int xmCol = line.indexOf("XM");
 		int xCol = line.indexOf("X");
-		line.add("STICK-" + n);
-		line.add("SPARK-" + n);
-		line.add("PS-" + n);
-		line.add("MS-" + n);
+		line.add("STICK-" + delta);
+		line.add("SPARK-" + delta);
+		line.add("PS-" + delta);
+		line.add("MS-" + delta);
 		csvWriter.write(line);
 		while ((line = csvReader.read()) != null) {
 			int mm = Integer.parseInt(line.get(mmCol));
@@ -177,7 +177,7 @@ public class CalculateMemeScores {
 			int xm = Integer.parseInt(line.get(xmCol));
 			int x = Integer.parseInt(line.get(xCol));
 			int absFq = Integer.parseInt(line.get(absFqCol));
-			double[] v = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, absFq, n);
+			double[] v = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, absFq, delta);
 			for (double d : v) {
 				line.add(d + "");
 			}

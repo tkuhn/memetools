@@ -154,7 +154,7 @@ public class CalculateComemes {
 						int nx0 = nxx - nx1;
 						int n10 = n1x - n11;
 						int n01 = nx1 - n11;
-						int n00 = nxx - n11 - n10 -n01;
+						int n00 = nxx - n11 - n10 - n01;
 						double v = 0;
 						//v = (double) n11 / ( n01 + n10 + n11 );
 						// Phi coefficient:

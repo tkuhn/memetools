@@ -44,8 +44,8 @@ public class CalculateHistory {
 			"'ps' = propagation score, 'st' = sticking factor, 'sp' = sparking factor, 'af' = absolute frequency")
 	private String metrics = "ms";
 
-	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 1;
+	@Parameter(names = "-d", description = "Set delta parameter (controlled noise level)")
+	private int delta = 1;
 
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
@@ -218,7 +218,7 @@ public class CalculateHistory {
 				xVal += m.getX(term);
 				fVal += m.getF(term);
 			}
-			double[] v = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n);
+			double[] v = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, delta);
 			for (int i = 0 ; i < metricsArray.length ; i++) {
 				String metric = metricsArray[i];
 				if (metric.equals("st")) {
@@ -242,7 +242,7 @@ public class CalculateHistory {
 	private String getOutputFileName(String metric) {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
-		String filename = "hi-" + metric + "-" + basename + "-n" + n + "-w" + windowSize + "-s" + stepSize;
+		String filename = "hi-" + metric + "-" + basename + "-d" + delta + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
 

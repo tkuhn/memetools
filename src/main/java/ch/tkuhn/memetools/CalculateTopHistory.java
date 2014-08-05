@@ -30,8 +30,8 @@ public class CalculateTopHistory {
 
 	private int stepsPerWindow;
 
-	@Parameter(names = "-n", description = "Set n parameter")
-	private int n = 1;
+	@Parameter(names = "-d", description = "Set n parameter")
+	private int delta = 1;
 
 	@Parameter(names = "-o", description = "Output file")
 	private File outputFile;
@@ -167,7 +167,7 @@ public class CalculateTopHistory {
 				xVal += m.getX(term);
 				fVal += m.getF(term);
 			}
-			double score = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, n)[3];
+			double score = MemeScorer.calculateMemeScoreValues(mmVal, mVal, xmVal, xVal, fVal, delta)[3];
 			if (score > firstScore) {
 				secondScore = firstScore;
 				firstScore = score;
@@ -213,7 +213,7 @@ public class CalculateTopHistory {
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
 		basename = basename.replace("-chronologic", "");
-		String filename = "hi-topms-" + basename + "-n" + n + "-w" + windowSize + "-s" + stepSize;
+		String filename = "hi-topms-" + basename + "-d" + delta + "-w" + windowSize + "-s" + stepSize;
 		return filename;
 	}
 
