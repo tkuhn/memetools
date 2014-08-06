@@ -30,8 +30,8 @@ public class MakeMetaGraph {
 
 	private File inputFile;
 
-	@Parameter(names = "-l", description = "Label file")
-	private File labelFile;
+	@Parameter(names = "-c", description = "Community data file")
+	private File commDataFile;
 
 	@Parameter(names = "-g", description = "Output file (in GML format)")
 	private File outputFile;
@@ -44,6 +44,9 @@ public class MakeMetaGraph {
 
 	@Parameter(names = "-i", description = "Ignore citations within the same type")
 	private boolean ignoreWithinCitations = false;
+
+	@Parameter(names = "-t", description = "Show the graph as a timeline")
+	private boolean showAsTimeline = false;
 
 	private File logFile;
 
@@ -75,6 +78,7 @@ public class MakeMetaGraph {
 	private Map<String,Color> typeColors = new HashMap<String,Color>();
 	private Map<String,Map<String,Integer>> typeEdges = new HashMap<String,Map<String,Integer>>();
 	private Map<String,String> labelMap = new HashMap<String,String>();
+	private Map<String,Integer> timeMap = new HashMap<String,Integer>();
 
 	public MakeMetaGraph() {
 	}
@@ -160,7 +164,12 @@ public class MakeMetaGraph {
 				w.write("id \"" + t + "\"\n");
 				w.write("weight " + count + "\n");
 				w.write("graphics [\n");
-				float x = typeCoords.get(t).getLeft() / count;
+				float x;
+				if (showAsTimeline) {
+					x = timeMap.get(t) / 10;
+				} else {
+					x = typeCoords.get(t).getLeft() / count;
+				}
 				float y = typeCoords.get(t).getRight() / count;
 				w.write("center [ x " + x + " y " + y + " ]\n");
 				w.write("w " + Math.sqrt(count) + "\n");
@@ -195,21 +204,26 @@ public class MakeMetaGraph {
 
 	private void init() {
 		logFile = new File(MemeUtils.getLogDir(), "make-meta-graph.log");
-		if (labelFile != null) {
+		if (commDataFile != null) {
 			try {
-				readLabels();
+				readCommData();
 			} catch (IOException ex) {
 				ex.printStackTrace();
 			}
 		}
 	}
 
-	private void readLabels() throws IOException {
-		BufferedReader r = new BufferedReader(new FileReader(labelFile));
+	private void readCommData() throws IOException {
+		BufferedReader r = new BufferedReader(new FileReader(commDataFile));
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		List<String> header = csvReader.read();
+		int commIdCol = header.indexOf("COMM-ID");
+		int meme1Col = header.indexOf("MEME1");
+		int timeCol = header.indexOf("TIME-AVG");
 		List<String> line;
 		while ((line = csvReader.read()) != null) {
-			labelMap.put(line.get(0), line.get(1));
+			labelMap.put(line.get(commIdCol), line.get(meme1Col));
+			timeMap.put(line.get(commIdCol), Integer.parseInt(line.get(timeCol)));
 		}
 		csvReader.close();
 	}

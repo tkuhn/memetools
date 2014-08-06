@@ -21,14 +21,14 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 
-public class CalculateCommMemes {
+public class CalculateCommData {
 
-	@Parameter(description = "input-file", required = true)
+	@Parameter(description = "chronologically-sorted-input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
 
 	private File inputFile;
 
-	@Parameter(names = "-o", description = "Output file")
+	@Parameter(names = "-o", description = "Output file for community data")
 	private File outputFile;
 
 	@Parameter(names = "-t", description = "File with terms", required = true)
@@ -46,7 +46,7 @@ public class CalculateCommMemes {
 	private File logFile;
 
 	public static final void main(String[] args) {
-		CalculateCommMemes obj = new CalculateCommMemes();
+		CalculateCommData obj = new CalculateCommData();
 		JCommander jc = new JCommander(obj);
 		try {
 			jc.parse(args);
@@ -67,6 +67,7 @@ public class CalculateCommMemes {
 	private List<String> communitySequence;
 	private Map<String,Integer> commFreq;
 	private List<String> terms;
+	private Map<String,Long> timeSum;
 
 	private Map<String,Integer> termFreq;
 	private Map<String,Map<String,Integer>> termCommFreq;
@@ -115,6 +116,7 @@ public class CalculateCommMemes {
 				communitySequence.add(c);
 			}
 			commFreq.put(c, 0);
+			timeSum.put(c, 0l);
 			commTopMemes.put(c, new ArrayList<Pair<String,Float>>());
 		}
 		reader.close();
@@ -189,6 +191,7 @@ public class CalculateCommMemes {
 			String c = communityMap.get(d.getId());
 			if (c == null) continue;
 			commFreq.put(c, commFreq.get(c) + 1);
+			timeSum.put(c, timeSum.get(c) + entryCount);
 			String text = " " + d.getText() + " ";
 			for (String term : terms) {
 				if (text.contains(" " + term + " ")) {
@@ -231,9 +234,12 @@ public class CalculateCommMemes {
 		}
 		CsvListWriter csvWriter = new CsvListWriter(new BufferedWriter(new FileWriter(outputFile)), MemeUtils.getCsvPreference());
 
+		csvWriter.write("COMM-ID", "TIME-AVG", "MEME1", "FSCORE1", "MEME2", "FSCORE2", "...");
+
 		for (String comm : communitySequence) {
 			List<Object> row = new ArrayList<Object>();
 			row.add(comm);
+			row.add(timeSum.get(comm) / commFreq.get(comm));
 			List<Pair<String,Float>> memes = new ArrayList<Pair<String,Float>>(commTopMemes.get(comm));
 			Collections.sort(memes, new Comparator<Pair<String,Float>>() {
 				@Override
