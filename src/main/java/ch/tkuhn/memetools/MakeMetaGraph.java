@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +147,14 @@ public class MakeMetaGraph {
 			BufferedWriter w = new BufferedWriter(new FileWriter(outputFile));
 			w.write("graph [\n");
 			w.write("directed 1\n");
-			for (String t : typeCount.keySet()) {
+			List<String> nodes = new ArrayList<String>(typeCount.keySet());
+			Collections.sort(nodes, new Comparator<String>() {
+				@Override
+				public int compare(String o1, String o2) {
+					return typeCount.get(o2) - typeCount.get(o1);
+				}
+			});
+			for (String t : nodes) {
 				int count = typeCount.get(t);
 				w.write("node [\n");
 				w.write("id \"" + t + "\"\n");
