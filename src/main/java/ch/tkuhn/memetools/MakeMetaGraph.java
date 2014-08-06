@@ -45,7 +45,7 @@ public class MakeMetaGraph {
 	@Parameter(names = "-i", description = "Ignore citations within the same type")
 	private boolean ignoreWithinCitations = false;
 
-	@Parameter(names = "-t", description = "Show the graph as a timeline")
+	@Parameter(names = "-l", description = "Show the graph as a timeline")
 	private boolean showAsTimeline = false;
 
 	private File logFile;
