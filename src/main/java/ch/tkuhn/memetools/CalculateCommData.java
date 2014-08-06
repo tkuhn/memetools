@@ -97,6 +97,7 @@ public class CalculateCommData {
 		communityMap = new HashMap<String,String>();
 		communitySequence = new ArrayList<String>();
 		commFreq = new HashMap<String,Integer>();
+		timeSum = new HashMap<String,Long>();
 
 		termFreq = new HashMap<String,Integer>();
 		termCommFreq = new HashMap<String,Map<String,Integer>>();
