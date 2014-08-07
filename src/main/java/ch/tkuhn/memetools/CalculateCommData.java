@@ -263,6 +263,7 @@ public class CalculateCommData {
 
 	private String getOutputFileName() {
 		String basename = inputFile.getName().replaceAll("\\..*$", "");
+		basename = basename.replaceFirst("-chronologic", "");
 		basename = basename.replaceFirst("-TA?", "");
 		String filename = "cm-" + basename;
 		return filename;
