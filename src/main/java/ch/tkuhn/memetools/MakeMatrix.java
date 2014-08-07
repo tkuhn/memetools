@@ -85,7 +85,7 @@ public class MakeMatrix {
 
 	private void init() {
 		if (outputFile == null) {
-			outputFile = new File(inputFile.getPath().replaceAll("\\..*?$", "") + "-m.csv");
+			outputFile = new File(inputFile.getPath().replaceAll("\\.[^.]*$", "") + "-m.csv");
 		}
 	}
 
