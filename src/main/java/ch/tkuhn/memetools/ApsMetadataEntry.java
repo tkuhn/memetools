@@ -51,8 +51,7 @@ public class ApsMetadataEntry {
 	}
 
 	public String preprocessHtml(String htmlText) {
-		htmlText = htmlText.replaceAll("</?(p|br|b|i|span|mi|mo|mn|math) ?.*?/?>", "");
-		htmlText = htmlText.replaceAll("(</?[a-z]+) .*?(/?>)", "$1$2");
+		htmlText = htmlText.replaceAll("</?[a-z]+ ?.*?/?>", "");
 		return htmlText;
 	}
 
