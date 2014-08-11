@@ -82,7 +82,7 @@ public class PrepareApsData {
 		obj.run();
 	}
 
-	private static final String citationDirName = "aps-dataset-citation-";
+	private static final String citationDirName = "aps-dataset-citations-";
 	private static final String metadataDirName = "aps-dataset-metadata-";
 	private static final String abstractDirName = "aps-dataset-metadata-abstracts-";
 
