@@ -26,9 +26,7 @@ import org.supercsv.io.CsvListReader;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.google.gson.annotations.SerializedName;
 
 public class PrepareApsData {
 
@@ -116,6 +114,7 @@ public class PrepareApsData {
 					processAbstractDir();
 				}
 			}
+			log("Number of documents: " + titles.size());
 			processCitationFile();
 			readTerms();
 			writeDataFiles();
@@ -182,7 +181,6 @@ public class PrepareApsData {
 				return FileVisitResult.CONTINUE;
 			}
 		});
-		log("Number of documents: " + titles.size());
 	}
 
 	private void processMetadataFileXml(Path path) {
@@ -240,6 +238,7 @@ public class PrepareApsData {
 			r.close();
 			log("Number of errors: " + errors);
 		} catch (IOException ex) {
+			log("IOException: " + path);
 			ex.printStackTrace();
 		}
 	}
@@ -272,32 +271,34 @@ public class PrepareApsData {
 			abstracts.put(doi, MemeUtils.normalize(text));
 			br.close();
 		} catch (IOException ex) {
+			log("IOException: " + path);
 			ex.printStackTrace();
 		}
 	}
 
 	private void processAbstractFileJson(Path path) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
-			ApsMetadata m = new Gson().fromJson(br, ApsMetadata.class);
+			ApsMetadataEntry m = ApsMetadataEntry.load(path.toFile());
 			String doi = m.getId();
 			if (!titles.containsKey(doi)) {
-				titles.put(doi, m.getTitle());
+				titles.put(doi, m.getNormalizedTitle());
 				dates.put(doi, m.getDate());
 				// initialize also references table:
 				references.put(doi, new ArrayList<String>());
 				if (readAbstracts()) {
-					String abstractText = m.getAbstract();
+					String abstractText = m.getNormalizedAbstract();
 					if (abstractText != null) {
-						abstracts.put(doi, MemeUtils.normalize(abstractText));
+						abstracts.put(doi, abstractText);
 					}
 				}
 			} else {
 				logDetail("ERROR. Duplicate DOI: " + doi);
 			}
 		} catch (IOException ex) {
+			log("IOException: " + path);
 			ex.printStackTrace();
 		} catch (JsonParseException ex) {
+			log("JsonParseException: " + path);
 			ex.printStackTrace();
 		}
 	}
@@ -527,35 +528,6 @@ public class PrepareApsData {
 
 	private void logDetail(Object obj) {
 		if (verbose) log(obj);
-	}
-
-
-	private static class ApsMetadata {
-
-		private String id;
-		private String date;
-		private Map<String,String> title;
-		@SerializedName("abstract")
-		private Map<String,String> abstractText;
-
-		public String getId() {
-			return id;
-		}
-
-		public String getDate() {
-			return date;
-		}
-
-		public String getTitle() {
-			if (title == null || !title.containsKey("value")) return null;
-			return title.get("value");
-		}
-
-		public String getAbstract() {
-			if (abstractText == null || !abstractText.containsKey("value")) return null;
-			return abstractText.get("value");
-		}
-
 	}
 
 }
