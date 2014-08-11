@@ -236,7 +236,7 @@ public class PrepareApsData {
 	}
 
 	private void processAbstractDir() throws IOException {
-		log("Reading abstracts...");
+		log("Reading metadata/abstracts...");
 		File abstractDir = new File(MemeUtils.getRawDataDir(), abstractDirName + year);
 		Files.walkFileTree(abstractDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
