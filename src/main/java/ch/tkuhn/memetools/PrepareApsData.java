@@ -26,8 +26,14 @@ import org.supercsv.io.CsvListReader;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.google.gson.annotations.SerializedName;
 
 public class PrepareApsData {
+
+	@Parameter(names = "-y", description = "Year of dataset version (2010 or 2013)")
+	private int year = 2013;
 
 	@Parameter(names = "-v", description = "Write detailed log")
 	private boolean verbose = false;
@@ -76,9 +82,10 @@ public class PrepareApsData {
 		obj.run();
 	}
 
-	private static String metadataFolder = "aps-dataset-metadata";
-	private static String abstractFolder = "aps-abstracts";
-	private static String citationFile = "aps-dataset-citations/citing_cited.csv";
+	private static final String citationDirName = "aps-dataset-citation-";
+	private static final String metadataDirName = "aps-dataset-metadata-";
+	private static final String abstractDirName = "aps-dataset-metadata-abstracts-";
+	private static final String citationFileName = "citing_cited.csv";
 
 	private Map<String,String> titles;
 	private Map<String,String> dates;
@@ -98,9 +105,15 @@ public class PrepareApsData {
 	public void run() {
 		init();
 		try {
-			processMetadataDir();
-			if ((!skipData && !skipDataTA) || termsFile != null) {
+			if (year >= 2013) {
+				// new format
 				processAbstractDir();
+			} else {
+				// old format
+				processMetadataDirXml();
+				if (readAbstracts()) {
+					processAbstractDir();
+				}
 			}
 			processCitationFile();
 			readTerms();
@@ -114,9 +127,11 @@ public class PrepareApsData {
 	}
 
 	private void init() {
-		logFile = new File(MemeUtils.getLogDir(), "prepare-aps.log");
+		logFile = new File(MemeUtils.getLogDir(), "prepare-aps-" + year + ".log");
 		log("==========");
 		log("Starting...");
+
+		log("Using version " + year + " of APS dataset");
 
 		titles = new HashMap<String,String>();
 		dates = new HashMap<String,String>();
@@ -142,14 +157,18 @@ public class PrepareApsData {
 		}
 	}
 
-	private void processMetadataDir() throws IOException {
+	private boolean readAbstracts() {
+		return (!skipData && !skipDataTA) || termsFile != null;
+	}
+
+	private void processMetadataDirXml() throws IOException {
 		log("Reading metadata...");
-		File metadataDir = new File(MemeUtils.getRawDataDir(), metadataFolder);
+		File metadataDir = new File(MemeUtils.getRawDataDir(), metadataDirName + year);
 		Files.walkFileTree(metadataDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
 				if (path.toString().endsWith(".xml")) {
-					processMetadataFile(path);
+					processMetadataFileXml(path);
 				}
 				return FileVisitResult.CONTINUE;
 			}
@@ -157,7 +176,7 @@ public class PrepareApsData {
 		log("Number of documents: " + titles.size());
 	}
 
-	private void processMetadataFile(Path path) {
+	private void processMetadataFileXml(Path path) {
 		log("Reading metadata file: " + path);
 		try {
 			BufferedReader r = new BufferedReader(new FileReader(path.toFile()));
@@ -218,19 +237,21 @@ public class PrepareApsData {
 
 	private void processAbstractDir() throws IOException {
 		log("Reading abstracts...");
-		File abstractDir = new File(MemeUtils.getRawDataDir(), abstractFolder);
+		File abstractDir = new File(MemeUtils.getRawDataDir(), abstractDirName + year);
 		Files.walkFileTree(abstractDir.toPath(), walkFileTreeOptions, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-				if (path.toString().endsWith(".txt")) {
-					processAbstractFile(path);
+				if (path.toString().endsWith(".json")) {
+					processAbstractFileJson(path);
+				} else if (path.toString().endsWith(".txt")) {
+					processAbstractFileTxt(path);
 				}
 				return FileVisitResult.CONTINUE;
 			}
 		});
 	}
 
-	private void processAbstractFile(Path path) {
+	private void processAbstractFileTxt(Path path) {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
 			String doi = "10.1103/" + path.getFileName().toString().replaceFirst(".txt$", "");
@@ -246,9 +267,32 @@ public class PrepareApsData {
 		}
 	}
 
+	private void processAbstractFileJson(Path path) {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
+			ApsMetadata m = new Gson().fromJson(br, ApsMetadata.class);
+			String doi = m.getId();
+			if (!titles.containsKey(doi)) {
+				titles.put(doi, m.getTitle());
+				dates.put(doi, m.getDate());
+				// initialize also references table:
+				references.put(doi, new ArrayList<String>());
+				if (readAbstracts()) {
+					abstracts.put(doi, MemeUtils.normalize(m.getAbstract()));
+				}
+			} else {
+				logDetail("ERROR. Duplicate DOI: " + doi);
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		} catch (JsonParseException ex) {
+			ex.printStackTrace();
+		}
+	}
+
 	private void processCitationFile() throws IOException {
 		log("Reading citations...");
-		File file = new File(MemeUtils.getRawDataDir(), citationFile);
+		File file = new File(MemeUtils.getRawDataDir(), citationDirName + year + "/" + citationFileName);
 		BufferedReader r = new BufferedReader(new FileReader(file));
 		String line;
 		int invalid = 0;
@@ -344,8 +388,8 @@ public class PrepareApsData {
 			fileSuffix += "-s" + randomSeed;
 		}
 		fileSuffix += ".txt";
-		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps-T" + fileSuffix);
-		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps-TA" + fileSuffix);
+		File fileT = new File(MemeUtils.getPreparedDataDir(), "aps" + year + "-T" + fileSuffix);
+		File fileTA = new File(MemeUtils.getPreparedDataDir(), "aps" + year + "-TA" + fileSuffix);
 		int noAbstracts = 0;
 		BufferedWriter wT = null;
 		BufferedWriter wTA = null;
@@ -417,7 +461,7 @@ public class PrepareApsData {
 	private void writeGmlFile() throws IOException {
 		if (skipGml || randomize) return;
 		log("Writing GML file...");
-		String filename = "aps";
+		String filename = "aps" + year;
 		if (terms != null) {
 			filename += "-t";
 			if (termCount > 0) filename += termCount;
@@ -471,6 +515,35 @@ public class PrepareApsData {
 
 	private void logDetail(Object obj) {
 		if (verbose) log(obj);
+	}
+
+
+	private static class ApsMetadata {
+
+		private String id;
+		private String date;
+		private Map<String,String> title;
+		@SerializedName("abstract")
+		private Map<String,String> abstractText;
+
+		public String getId() {
+			return id;
+		}
+
+		public String getDate() {
+			return date;
+		}
+
+		public String getTitle() {
+			if (!title.containsKey("value")) return null;
+			return title.get("value");
+		}
+
+		public String getAbstract() {
+			if (!abstractText.containsKey("value")) return null;
+			return abstractText.get("value");
+		}
+
 	}
 
 }
