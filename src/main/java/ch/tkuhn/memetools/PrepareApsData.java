@@ -85,7 +85,8 @@ public class PrepareApsData {
 	private static final String citationDirName = "aps-dataset-citation-";
 	private static final String metadataDirName = "aps-dataset-metadata-";
 	private static final String abstractDirName = "aps-dataset-metadata-abstracts-";
-	private static final String citationFileName = "citing_cited.csv";
+
+	private String citationFileName;
 
 	private Map<String,String> titles;
 	private Map<String,String> dates;
@@ -127,11 +128,19 @@ public class PrepareApsData {
 	}
 
 	private void init() {
-		logFile = new File(MemeUtils.getLogDir(), "prepare-aps-" + year + ".log");
+		logFile = new File(MemeUtils.getLogDir(), "prepare-aps" + year + ".log");
 		log("==========");
 		log("Starting...");
 
 		log("Using version " + year + " of APS dataset");
+
+		if (year >= 2013) {
+			// new format
+			citationFileName = "aps-dataset-citations-" + year + ".csv";
+		} else {
+			// old format
+			citationFileName = "citing_cited.csv";
+		}
 
 		titles = new HashMap<String,String>();
 		dates = new HashMap<String,String>();
