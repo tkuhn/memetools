@@ -278,7 +278,10 @@ public class PrepareApsData {
 				// initialize also references table:
 				references.put(doi, new ArrayList<String>());
 				if (readAbstracts()) {
-					abstracts.put(doi, MemeUtils.normalize(m.getAbstract()));
+					String abstractText = m.getAbstract();
+					if (abstractText != null) {
+						abstracts.put(doi, MemeUtils.normalize(abstractText));
+					}
 				}
 			} else {
 				logDetail("ERROR. Duplicate DOI: " + doi);
@@ -535,12 +538,12 @@ public class PrepareApsData {
 		}
 
 		public String getTitle() {
-			if (!title.containsKey("value")) return null;
+			if (title == null || !title.containsKey("value")) return null;
 			return title.get("value");
 		}
 
 		public String getAbstract() {
-			if (!abstractText.containsKey("value")) return null;
+			if (abstractText == null || !abstractText.containsKey("value")) return null;
 			return abstractText.get("value");
 		}
 
