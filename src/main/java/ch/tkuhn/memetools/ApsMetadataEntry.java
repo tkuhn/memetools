@@ -33,6 +33,7 @@ public class ApsMetadataEntry {
 	public String getNormalizedTitle() {
 		if (title == null || !title.containsKey("value")) return null;
 		String n = title.get("value");
+		if (n == null) return null;
 		if (title.containsKey("format") && title.get("format").startsWith("html")) {
 			n = preprocessHtml(n);
 		}
@@ -42,6 +43,7 @@ public class ApsMetadataEntry {
 	public String getNormalizedAbstract() {
 		if (abstractText == null || !abstractText.containsKey("value")) return null;
 		String n = abstractText.get("value");
+		if (n == null) return null;
 		if (abstractText.containsKey("format") && abstractText.get("format").startsWith("html")) {
 			n = preprocessHtml(n);
 		}
