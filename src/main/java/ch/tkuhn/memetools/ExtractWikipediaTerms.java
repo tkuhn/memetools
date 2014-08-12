@@ -65,7 +65,7 @@ public class ExtractWikipediaTerms {
 	}
 
 	public void run() throws Exception {
-		logFile = new File(MemeUtils.getLogDir(), "extract-wikipedia.log");
+		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
 		for (String sc : startCategories) {
@@ -131,7 +131,7 @@ public class ExtractWikipediaTerms {
 		log("Number of labels: " + labels.size());
 
 		log("Writing output file...");
-		File outputFile = new File(MemeUtils.getOutputDataDir(), "wikipedia-terms.txt");
+		File outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".txt");
 		final BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 		try {
 			for (String l : labels.keySet()) {
@@ -157,6 +157,10 @@ public class ExtractWikipediaTerms {
 		subcatParser.setRDFHandler(rdfHandler);
 		subcatParser.parse(subcatReader, "");
 		subcatReader.close();
+	}
+
+	private String getOutputFileName() {
+		return "dict-wikipedia-d" + depth;
 	}
 
 	private void log(Object obj) {
