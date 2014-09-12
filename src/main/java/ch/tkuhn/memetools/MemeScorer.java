@@ -118,7 +118,21 @@ public class MemeScorer {
 		double stick = (double) mmVal / (mVal + delta);
 		double spark = (double) (xmVal + delta) / (xVal + delta);
 		double ps = stick / spark;
-		double ms = ps * rfVal;
+		double ms = rfVal * ps;
+		return new double[] {stick, spark, ps, ms};
+	}
+
+	public double[] calculateMemeScoreValues(String term, int delta, float gamma) {
+		return calculateMemeScoreValues(getMM(term), getM(term), getXM(term), getX(term), getF(term), delta, gamma);
+	}
+
+	public static double[] calculateMemeScoreValues(int mmVal, int mVal, int xmVal, int xVal, int fVal, int delta, float gamma) {
+		int t = xVal + mVal;
+		double rfVal = (double) fVal / t;
+		double stick = (double) mmVal / (mVal + delta);
+		double spark = (double) (xmVal + delta) / (xVal + delta);
+		double ps = stick / spark;
+		double ms = Math.pow(rfVal, 2*gamma) * Math.pow(ps, 2*(1-gamma));
 		return new double[] {stick, spark, ps, ms};
 	}
 

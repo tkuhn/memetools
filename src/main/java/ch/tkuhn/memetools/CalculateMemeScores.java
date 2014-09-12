@@ -39,6 +39,9 @@ public class CalculateMemeScores {
 	@Parameter(names = "-d", description = "Set delta parameter (controlled noise level)")
 	private int delta = 3;
 
+	@Parameter(names = "-g", description = "Set gamma parameter and use modified meme score")
+	private Float gamma = null;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -70,8 +73,15 @@ public class CalculateMemeScores {
 		init();
 		try {
 			if (appendMode) {
-				appendTable();
+				if (gamma == null) {
+					appendTable();
+				} else {
+					appendTableGamma();
+				}
 			} else {
+				if (gamma != null) {
+					throw new RuntimeException("Gamma can only be set in append mode");
+				}
 				extractTerms();
 				countTerms();
 				writeTable();
@@ -181,6 +191,34 @@ public class CalculateMemeScores {
 			for (double d : v) {
 				line.add(d + "");
 			}
+			csvWriter.write(line);
+		}
+		csvReader.close();
+		csvWriter.close();
+	}
+
+	private void appendTableGamma() throws IOException {
+		log("Calculating modified meme scores and appending to CSV file...");
+		BufferedReader f = new BufferedReader(new FileReader(inputFile), 64*1024);
+		CsvListReader csvReader = new CsvListReader(f, MemeUtils.getCsvPreference());
+		BufferedWriter w = new BufferedWriter(new FileWriter(outputFile), 64*1024);
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		List<String> line = csvReader.read();
+		int absFqCol = line.indexOf("ABSFREQ");
+		int mmCol = line.indexOf("MM");
+		int mCol = line.indexOf("M");
+		int xmCol = line.indexOf("XM");
+		int xCol = line.indexOf("X");
+		line.add("MS-" + delta + "-" + gamma);
+		csvWriter.write(line);
+		while ((line = csvReader.read()) != null) {
+			int mm = Integer.parseInt(line.get(mmCol));
+			int m = Integer.parseInt(line.get(mCol));
+			int xm = Integer.parseInt(line.get(xmCol));
+			int x = Integer.parseInt(line.get(xCol));
+			int absFq = Integer.parseInt(line.get(absFqCol));
+			double ms = MemeScorer.calculateMemeScoreValues(mm, m, xm, x, absFq, delta, gamma)[3];
+			line.add(ms + "");
 			csvWriter.write(line);
 		}
 		csvReader.close();
