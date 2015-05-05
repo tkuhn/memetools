@@ -19,7 +19,7 @@ import com.beust.jcommander.ParameterException;
 
 public class CalculatePaperSuccess {
 
-	@Parameter(description = "input-file", required = true)
+	@Parameter(description = "chronologically-sorted-input-file", required = true)
 	private List<String> parameters = new ArrayList<String>();
 
 	private File inputFile;
@@ -84,6 +84,7 @@ public class CalculatePaperSuccess {
 			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 		}
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
+		terms = new ArrayList<String>();
 	}
 
 	private void readTerms() throws IOException {
