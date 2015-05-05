@@ -30,7 +30,7 @@ public class DataEntry {
 	}
 
 	public DataEntry(Object id, Object date, String authors, String text) {
-		this(id, date, text, authors, new ArrayList<String>());
+		this(id, date, authors, text, new ArrayList<String>());
 	}
 
 	public DataEntry(String line) {
