@@ -421,7 +421,10 @@ public class PrepareApsData {
 		log("Writing data files...");
 		String fileSuffix = "";
 		if (recordAuthorNames) {
-			fileSuffix += "-authors";
+			fileSuffix += "-auth";
+		}
+		if (recordCitations) {
+			fileSuffix += "-cit";
 		}
 		if (randomizeTimeWindow > 0) {
 			fileSuffix += "-randomized" + randomizeTimeWindow;
