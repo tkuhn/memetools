@@ -45,6 +45,9 @@ public class PrepareApsData {
 	@Parameter(names = "-c", description = "Only use first c terms")
 	private int termCount = -1;
 
+	@Parameter(names = "-a", description = "Record author names (only implemented for year 2013 and with abstracts)")
+	private boolean recordAuthorNames = false;
+
 	@Parameter(names = "-sg", description = "Skip GML file generation")
 	private boolean skipGml = false;
 
@@ -90,6 +93,7 @@ public class PrepareApsData {
 	private Map<String,String> dates;
 	private Map<String,String> abstracts;
 	private Map<String,List<String>> references;
+	private Map<String,String> authors;
 
 	private Map<String,String> randomizedDois;
 	private Random random;
@@ -145,6 +149,9 @@ public class PrepareApsData {
 		dates = new HashMap<String,String>();
 		abstracts = new HashMap<String,String>();
 		references = new HashMap<String,List<String>>();
+		if (recordAuthorNames) {
+			authors = new HashMap<String,String>();
+		}
 
 		terms = null;
 
@@ -291,6 +298,14 @@ public class PrepareApsData {
 						abstracts.put(doi, abstractText);
 					}
 				}
+				if (recordAuthorNames) {
+					String s = "";
+					for (String au : m.getNormalizedAuthors()) {
+						s += au + " ";  // au might be null
+					}
+					s = s.replaceFirst(" $", "");
+					authors.put(doi, s);
+				}
 			} else {
 				logDetail("ERROR. Duplicate DOI: " + doi);
 			}
@@ -392,10 +407,13 @@ public class PrepareApsData {
 		}
 		log("Writing data files...");
 		String fileSuffix = "";
+		if (recordAuthorNames) {
+			fileSuffix += "-authors";
+		}
 		if (randomizeTimeWindow > 0) {
-			fileSuffix = "-randomized" + randomizeTimeWindow;
+			fileSuffix += "-randomized" + randomizeTimeWindow;
 		} else if (randomize) {
-			fileSuffix = "-randomized";
+			fileSuffix += "-randomized";
 		}
 		if (randomize && randomSeed != null) {
 			fileSuffix += "-s" + randomSeed;
@@ -413,9 +431,13 @@ public class PrepareApsData {
 			if (randomize) doi1 = randomizedDois.get(doi1);
 			String text = titles.get(doi1);
 			String date = dates.get(doi1);
-			DataEntry eT = new DataEntry(doi1, date, text);
+			String auth = null;
+			if (recordAuthorNames && authors.containsKey(doi1)) {
+				auth = authors.get(doi1);
+			}
+			DataEntry eT = new DataEntry(doi1, date, auth, text);
 			if (abstracts.containsKey(doi1)) text += " " + abstracts.get(doi1);
-			DataEntry eTA = new DataEntry(doi1, date, text);
+			DataEntry eTA = new DataEntry(doi1, date, auth, text);
 			for (String doi2 : refs) {
 				if (randomize) doi2 = randomizedDois.get(doi2);
 				text = titles.get(doi2);

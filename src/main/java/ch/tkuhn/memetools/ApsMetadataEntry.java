@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
@@ -14,6 +16,7 @@ public class ApsMetadataEntry {
 	private String id;
 	private String date;
 	private Map<String,String> title;
+	private List<Map<String,String>> authors;
 	@SerializedName("abstract")
 	private Map<String,String> abstractText;
 
@@ -28,6 +31,21 @@ public class ApsMetadataEntry {
 
 	public String getDate() {
 		return date;
+	}
+
+	public List<String> getNormalizedAuthors() {
+		List<String> nAuthors = new ArrayList<String>();
+		for (Map<String,String> m : authors) {
+			if (!m.containsKey("type") || !"Person".equals(m.get("type")) || !m.containsKey("firstname") ||
+					!m.containsKey("surname") || m.get("firstname").isEmpty() || m.get("surname").isEmpty()) {
+				nAuthors.add(null);
+				continue;
+			}
+			String f = m.get("firstname").toLowerCase();
+			String s = m.get("surname").toLowerCase();
+			nAuthors.add(f.substring(0, 1) + "." + s);
+		}
+		return nAuthors;
 	}
 
 	public String getNormalizedTitle() {
