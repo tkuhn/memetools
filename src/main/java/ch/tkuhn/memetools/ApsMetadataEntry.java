@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,17 @@ public class ApsMetadataEntry {
 	private Map<String,String> abstractText;
 
 	public static ApsMetadataEntry load(File file) throws FileNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(file));
-		return new Gson().fromJson(br, ApsMetadataEntry.class);
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader(file));
+			return new Gson().fromJson(br, ApsMetadataEntry.class);
+		} finally {
+			try {
+				if (br != null) br.close();
+			} catch (IOException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
 	}
 
 	public String getId() {
