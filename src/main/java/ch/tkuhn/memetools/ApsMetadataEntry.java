@@ -16,7 +16,7 @@ public class ApsMetadataEntry {
 	private String id;
 	private String date;
 	private Map<String,String> title;
-	private List<Map<String,String>> authors;
+	private List<Map<String,Object>> authors;
 	@SerializedName("abstract")
 	private Map<String,String> abstractText;
 
@@ -36,14 +36,18 @@ public class ApsMetadataEntry {
 	public List<String> getNormalizedAuthors() {
 		List<String> nAuthors = new ArrayList<String>();
 		if (authors != null) {
-			for (Map<String,String> m : authors) {
+			for (Map<String,Object> m : authors) {
 				if (!m.containsKey("type") || !"Person".equals(m.get("type")) || !m.containsKey("firstname") ||
-						!m.containsKey("surname") || m.get("firstname").isEmpty() || m.get("surname").isEmpty()) {
+						!m.containsKey("surname")) {
 					nAuthors.add(null);
 					continue;
 				}
-				String f = m.get("firstname").toLowerCase();
-				String s = m.get("surname").toLowerCase();
+				String f = m.get("firstname").toString().toLowerCase();
+				String s = m.get("surname").toString().toLowerCase();
+				if (f.isEmpty() || s.isEmpty()) {
+					nAuthors.add(null);
+					continue;
+				}
 				nAuthors.add(f.substring(0, 1) + "." + s);
 			}
 		}
