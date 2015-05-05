@@ -147,9 +147,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			// TODO write real header:
-			//csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta);
-			csvWriter.write("ID", "DATE", "AUTHORS");
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY"); //, "TOP-MS-" + delta);
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -161,24 +159,36 @@ public class CalculatePaperSuccess {
 				ms.recordTerms(d);
 				long thisDay = getDayCount(d.getDate());
 				String doi = d.getId();
-				// TODO write real data:
-				csvWriter.write(doi, d.getDate(), d.getAuthors());
-
+				String[] authList = d.getAuthors().split(" ");
 				String journal = PrepareApsData.getJournalFromDoi(doi);
-				String key = "J:" + journal;
-				addCpyPaper(key, thisDay);
-				String cpyKeys = key;
-				for (String author : d.getAuthors().split(" ")) {
-					key = "A:" + author;
-					addCpyPaper(key, thisDay);
-					cpyKeys += " " + key;
+				String journalKey = "J:" + journal;
+				double journalCpy = updateCpyData(journalKey, thisDay);
+				double firstAuthorCpy = -2.0;
+				double authorMaxCpy = -2.0;
+				for (String author : authList) {
+					String authorKey = "A:" + author;
+					double authorCpy = updateCpyData(authorKey, thisDay);
+					if (firstAuthorCpy == -2.0) {
+						firstAuthorCpy = authorCpy;
+					}
+					if (authorCpy > authorMaxCpy) {
+						authorMaxCpy = authorCpy;
+					}
 				}
-				for (String k : cpyKeys.split(" ")) {
-					addCpyPaper(k, thisDay);
+				// TODO write real data:
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy);
+
+				addCpyPaper(journalKey);
+				String cpyKeys = journalKey;
+				for (String author : authList) {
+					String authorKey = "A:" + author;
+					addCpyPaper(authorKey);
+					cpyKeys += " " + authorKey;
 				}
-				for (String cit : d.getCitations().split(" ")) {
+				String[] citList = d.getCitations().split(" ");
+				for (String cit : citList) {
 					for (String k : cpyMapKeys.get(cit).split(" ")) {
-						addCpyCitation(k, thisDay);
+						addCpyCitation(k);
 					}
 				}
 				cpyMapKeys.put(doi, cpyKeys);
@@ -189,17 +199,24 @@ public class CalculatePaperSuccess {
 		}
 	}
 
-	private void addCpyPaper(String key, long thisDay) {
+	private double updateCpyData(String key, long thisDay) {
 		long lastDay = cpyLastDay.get(key);
 		long dayDiff = thisDay - lastDay;
 		int paperCount = cpyPaperCount.get(key);
+		int citationCount = cpyCitationCount.get(key);
 		long paperDays = cpyPaperDays.get(key);
-		cpyPaperDays.put(key, paperDays + paperCount*dayDiff);
+		paperDays = paperDays + paperCount*dayDiff;
+		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
-		cpyPaperCount.put(key, paperCount+1);
+		if (paperDays == 0) return -1.0;
+		return (double) citationCount/paperDays;
 	}
 
-	private void addCpyCitation(String key, long thisDay) {
+	private void addCpyPaper(String key) {
+		cpyPaperCount.put(key, cpyPaperCount.get(key)+1);
+	}
+
+	private void addCpyCitation(String key) {
 		cpyCitationCount.put(key, cpyCitationCount.get(key) + 1);
 	}
 
