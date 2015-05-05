@@ -161,6 +161,9 @@ public class CalculatePaperSuccess {
 				ms.recordTerms(d);
 				long thisDay = getDayCount(d.getDate());
 				String doi = d.getId();
+				// TODO write real data:
+				csvWriter.write(doi, d.getDate(), d.getAuthors());
+
 				String journal = PrepareApsData.getJournalFromDoi(doi);
 				String key = "J:" + journal;
 				addCpyPaper(key, thisDay);
@@ -173,9 +176,6 @@ public class CalculatePaperSuccess {
 				for (String k : cpyKeys.split(" ")) {
 					addCpyPaper(k, thisDay);
 				}
-				// TODO ...
-				// TODO write real data:
-				csvWriter.write(doi, d.getDate(), d.getAuthors());
 				for (String cit : d.getCitations().split(" ")) {
 					for (String k : cpyMapKeys.get(cit).split(" ")) {
 						addCpyCitation(k, thisDay);
@@ -190,11 +190,17 @@ public class CalculatePaperSuccess {
 	}
 
 	private void addCpyPaper(String key, long thisDay) {
-		// TODO
+		long lastDay = cpyLastDay.get(key);
+		long dayDiff = thisDay - lastDay;
+		int paperCount = cpyPaperCount.get(key);
+		long paperDays = cpyPaperDays.get(key);
+		cpyPaperDays.put(key, paperDays + paperCount*dayDiff);
+		cpyLastDay.put(key, thisDay);
+		cpyPaperCount.put(key, paperCount+1);
 	}
 
 	private void addCpyCitation(String key, long thisDay) {
-		// TODO
+		cpyCitationCount.put(key, cpyCitationCount.get(key) + 1);
 	}
 
 	private static long getDayCount(String date) {
