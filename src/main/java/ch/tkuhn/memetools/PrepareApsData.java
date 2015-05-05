@@ -48,6 +48,9 @@ public class PrepareApsData {
 	@Parameter(names = "-a", description = "Record author names (only implemented for year 2013 and with abstracts)")
 	private boolean recordAuthorNames = false;
 
+	@Parameter(names = "-cit", description = "Record citations by DOIs")
+	private boolean recordCitations = false;
+
 	@Parameter(names = "-sg", description = "Skip GML file generation")
 	private boolean skipGml = false;
 
@@ -94,6 +97,7 @@ public class PrepareApsData {
 	private Map<String,String> abstracts;
 	private Map<String,List<String>> references;
 	private Map<String,String> authors;
+	private Map<String,String> citations;
 
 	private Map<String,String> randomizedDois;
 	private Random random;
@@ -151,6 +155,9 @@ public class PrepareApsData {
 		references = new HashMap<String,List<String>>();
 		if (recordAuthorNames) {
 			authors = new HashMap<String,String>();
+		}
+		if (recordCitations) {
+			citations = new HashMap<String,String>();
 		}
 
 		terms = null;
@@ -306,6 +313,9 @@ public class PrepareApsData {
 					s = s.replaceFirst(" $", "");
 					authors.put(doi, s);
 				}
+				if (recordCitations) {
+					citations.put(doi, "");
+				}
 			} else {
 				logDetail("ERROR. Duplicate DOI: " + doi);
 			}
@@ -344,6 +354,9 @@ public class PrepareApsData {
 					continue;
 				}
 				references.get(doi1).add(doi2);
+				if (recordCitations) {
+					citations.put(doi1, citations.get(doi1) + " " + doi2);
+				}
 			} else {
 				log("ERROR. Invalid line: " + line);
 				invalid++;
@@ -431,13 +444,19 @@ public class PrepareApsData {
 			if (randomize) doi1 = randomizedDois.get(doi1);
 			String text = titles.get(doi1);
 			String date = dates.get(doi1);
-			String auth = null;
-			if (recordAuthorNames && authors.containsKey(doi1)) {
-				auth = authors.get(doi1);
-			}
-			DataEntry eT = new DataEntry(doi1, date, auth, text);
+			DataEntry eT = new DataEntry(doi1, date, text);
 			if (abstracts.containsKey(doi1)) text += " " + abstracts.get(doi1);
-			DataEntry eTA = new DataEntry(doi1, date, auth, text);
+			DataEntry eTA = new DataEntry(doi1, date, text);
+			if (recordAuthorNames && authors.containsKey(doi1)) {
+				String auth = authors.get(doi1);
+				eT.setAuthors(auth);
+				eTA.setAuthors(auth);
+			}
+			if (recordCitations) {
+				String cit = citations.get(doi1).replaceFirst("^ ", "");
+				eT.setCitations(cit);
+				eTA.setAuthors(cit);
+			}
 			for (String doi2 : refs) {
 				if (randomize) doi2 = randomizedDois.get(doi2);
 				text = titles.get(doi2);

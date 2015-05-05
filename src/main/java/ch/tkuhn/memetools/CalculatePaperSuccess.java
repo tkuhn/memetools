@@ -7,8 +7,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
@@ -60,6 +66,11 @@ public class CalculatePaperSuccess {
 	private List<String> terms;
 	private CsvListWriter csvWriter;
 	private BufferedReader reader;
+	private Map<String,String> cpyMapKeys;
+	private Map<String,Long> cpyLastDay;
+	private Map<String,Long> cpyPaperDays;
+	private Map<String,Integer> cpyPaperCount;
+	private Map<String,Integer> cpyCitationCount;
 
 	public CalculatePaperSuccess() {
 	}
@@ -85,6 +96,10 @@ public class CalculatePaperSuccess {
 		}
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
 		terms = new ArrayList<String>();
+		cpyLastDay = new HashMap<String,Long>();
+		cpyPaperDays = new HashMap<String,Long>();
+		cpyPaperCount = new HashMap<String,Integer>();
+		cpyCitationCount = new HashMap<String,Integer>();
 	}
 
 	private void readTerms() throws IOException {
@@ -144,12 +159,55 @@ public class CalculatePaperSuccess {
 				logProgress(progress);
 				DataEntry d = new DataEntry(line);
 				ms.recordTerms(d);
+				long thisDay = getDayCount(d.getDate());
+				String doi = d.getId();
+				String journal = PrepareApsData.getJournalFromDoi(doi);
+				String key = "J:" + journal;
+				addCpyPaper(key, thisDay);
+				String cpyKeys = key;
+				for (String author : d.getAuthors().split(" ")) {
+					key = "A:" + author;
+					addCpyPaper(key, thisDay);
+					cpyKeys += " " + key;
+				}
+				for (String k : cpyKeys.split(" ")) {
+					addCpyPaper(k, thisDay);
+				}
+				// TODO ...
 				// TODO write real data:
-				csvWriter.write(d.getId(), d.getDate(), d.getAuthors());
+				csvWriter.write(doi, d.getDate(), d.getAuthors());
+				for (String cit : d.getCitations().split(" ")) {
+					for (String k : cpyMapKeys.get(cit).split(" ")) {
+						addCpyCitation(k, thisDay);
+					}
+				}
+				cpyMapKeys.put(doi, cpyKeys);
 			}
 		} finally {
 			if (csvWriter != null) csvWriter.close();
 			if (reader != null) reader.close();
+		}
+	}
+
+	private void addCpyPaper(String key, long thisDay) {
+		// TODO
+	}
+
+	private void addCpyCitation(String key, long thisDay) {
+		// TODO
+	}
+
+	private static long getDayCount(String date) {
+		return TimeUnit.DAYS.convert(parseDate(date).getTime(), TimeUnit.MILLISECONDS);
+	}
+
+	private static final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+
+	private static Date parseDate(String s) {
+		try {
+			return formatter.parse(s);
+		} catch (ParseException ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 

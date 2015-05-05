@@ -7,31 +7,24 @@ public class DataEntry {
 
 	public static final String SEP = "  ";
 	public static final String AUTHORS_MARKER = "A:";
+	public static final String CITATIONS_MARKER = "C:";
 
 	private Object id;
 	private Object date;
-	private String authors;
 	private String text;
 	private List<String> citedText;
+	private String authors;
+	private String citations;
 
 	public DataEntry(Object id, Object date, String text, List<String> citedText) {
-		this(id, date, null, text, citedText);
-	}
-
-	public DataEntry(Object id, Object date, String authors, String text, List<String> citedText) {
 		this.id = id;
 		this.date = date;
-		this.authors = authors;
 		this.text = text;
 		this.citedText = citedText;
 	}
 
 	public DataEntry(Object id, Object date, String text) {
-		this(id, date, text, null, new ArrayList<String>());
-	}
-
-	public DataEntry(Object id, Object date, String authors, String text) {
-		this(id, date, authors, text, new ArrayList<String>());
+		this(id, date, text, new ArrayList<String>());
 	}
 
 	public DataEntry(String line) {
@@ -43,15 +36,30 @@ public class DataEntry {
 		}
 		date = splitline[0];
 		id = splitline[1];
-		if (splitline[2].startsWith(AUTHORS_MARKER)) {
-			authors = splitline[2].substring(AUTHORS_MARKER.length());
-			tpos = 3;
+		while (splitline[tpos].matches("^[A-Z]:")) {
+			if (splitline[tpos].startsWith(AUTHORS_MARKER)) {
+				authors = splitline[tpos].substring(AUTHORS_MARKER.length());
+				tpos++;
+			} else if (splitline[tpos].startsWith(CITATIONS_MARKER)) {
+				citations = splitline[tpos].substring(CITATIONS_MARKER.length());
+				tpos++;
+			} else {
+				break;
+			}
 		}
 		text = splitline[tpos];
 		citedText = new ArrayList<String>();
 		for (int i = tpos+1 ; i < splitline.length ; i++) {
 			citedText.add(splitline[i]);
 		}
+	}
+
+	protected void setAuthors(String authors) {
+		this.authors = authors;
+	}
+
+	protected void setCitations(String citations) {
+		this.citations = citations;
 	}
 
 	public String getId() {
@@ -71,6 +79,10 @@ public class DataEntry {
 
 	public String getAuthors() {
 		return authors;
+	}
+
+	public String getCitations() {
+		return citations;
 	}
 
 	public short getYear() {
@@ -93,12 +105,14 @@ public class DataEntry {
 	}
 
 	public String getLine() {
-		String line;
-		if (authors == null) {
-			line = date + SEP + id + SEP + text;
-		} else {
-			line = date + SEP + id + SEP + AUTHORS_MARKER + authors + SEP + text;
+		String line = date + SEP + id;
+		if (authors != null) {
+			line += SEP + AUTHORS_MARKER + authors;
 		}
+		if (citations != null) {
+			line += SEP + CITATIONS_MARKER + citations;
+		}
+		line += SEP + text;
 		for (String c : citedText) {
 			line += SEP + c;
 		}
