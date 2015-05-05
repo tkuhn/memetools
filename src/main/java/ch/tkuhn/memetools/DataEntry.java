@@ -6,6 +6,7 @@ import java.util.List;
 public class DataEntry {
 
 	public static final String SEP = "  ";
+	public static final String AUTHORS_MARKER = "A:";
 
 	private Object id;
 	private Object date;
@@ -42,8 +43,8 @@ public class DataEntry {
 		}
 		date = splitline[0];
 		id = splitline[1];
-		if (splitline[2].startsWith(" ")) {
-			authors = splitline[2].substring(1);
+		if (splitline[2].startsWith(AUTHORS_MARKER)) {
+			authors = splitline[2].substring(AUTHORS_MARKER.length());
 			tpos = 3;
 		}
 		text = splitline[tpos];
@@ -96,7 +97,7 @@ public class DataEntry {
 		if (authors == null) {
 			line = date + SEP + id + SEP + text;
 		} else {
-			line = date + SEP + id + SEP + " " + authors + SEP + text;
+			line = date + SEP + id + SEP + AUTHORS_MARKER + authors + SEP + text;
 		}
 		for (String c : citedText) {
 			line += SEP + c;
