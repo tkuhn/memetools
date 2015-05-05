@@ -35,15 +35,17 @@ public class ApsMetadataEntry {
 
 	public List<String> getNormalizedAuthors() {
 		List<String> nAuthors = new ArrayList<String>();
-		for (Map<String,String> m : authors) {
-			if (!m.containsKey("type") || !"Person".equals(m.get("type")) || !m.containsKey("firstname") ||
-					!m.containsKey("surname") || m.get("firstname").isEmpty() || m.get("surname").isEmpty()) {
-				nAuthors.add(null);
-				continue;
+		if (authors != null) {
+			for (Map<String,String> m : authors) {
+				if (!m.containsKey("type") || !"Person".equals(m.get("type")) || !m.containsKey("firstname") ||
+						!m.containsKey("surname") || m.get("firstname").isEmpty() || m.get("surname").isEmpty()) {
+					nAuthors.add(null);
+					continue;
+				}
+				String f = m.get("firstname").toLowerCase();
+				String s = m.get("surname").toLowerCase();
+				nAuthors.add(f.substring(0, 1) + "." + s);
 			}
-			String f = m.get("firstname").toLowerCase();
-			String s = m.get("surname").toLowerCase();
-			nAuthors.add(f.substring(0, 1) + "." + s);
 		}
 		return nAuthors;
 	}
