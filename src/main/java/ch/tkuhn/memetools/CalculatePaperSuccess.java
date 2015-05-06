@@ -235,7 +235,7 @@ public class CalculatePaperSuccess {
 	}
 
 	private String getOutputFileName() {
-		return "su-" + inputFile.getName().replaceAll("\\..*$", "");
+		return "su-" + inputFile.getName().replaceAll("-chronologic", "").replaceAll("\\..*$", "");
 	}
 
 	private void logProgress(int p) {
