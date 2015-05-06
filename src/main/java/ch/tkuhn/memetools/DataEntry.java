@@ -39,13 +39,12 @@ public class DataEntry {
 		while (splitline[tpos].matches("^[A-Z]:")) {
 			if (splitline[tpos].startsWith(AUTHORS_MARKER)) {
 				authors = splitline[tpos].substring(AUTHORS_MARKER.length());
-				tpos++;
 			} else if (splitline[tpos].startsWith(CITATIONS_MARKER)) {
 				citations = splitline[tpos].substring(CITATIONS_MARKER.length());
-				tpos++;
 			} else {
 				break;
 			}
+			tpos++;
 		}
 		text = splitline[tpos];
 		citedText = new ArrayList<String>();

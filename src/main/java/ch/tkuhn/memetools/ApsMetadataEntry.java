@@ -52,8 +52,8 @@ public class ApsMetadataEntry {
 					nAuthors.add(null);
 					continue;
 				}
-				String f = m.get("firstname").toString().toLowerCase();
-				String s = m.get("surname").toString().toLowerCase();
+				String f = m.get("firstname").toString().toLowerCase().replaceAll("\\s+", "");;
+				String s = m.get("surname").toString().toLowerCase().replaceAll("\\s+", "");;
 				if (f.isEmpty() || s.isEmpty()) {
 					nAuthors.add(null);
 					continue;
