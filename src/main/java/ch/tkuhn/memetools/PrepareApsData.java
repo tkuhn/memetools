@@ -458,7 +458,7 @@ public class PrepareApsData {
 			if (recordCitations) {
 				String cit = citations.get(doi1).replaceFirst("^ ", "");
 				eT.setCitations(cit);
-				eTA.setAuthors(cit);
+				eTA.setCitations(cit);
 			}
 			for (String doi2 : refs) {
 				if (randomize) doi2 = randomizedDois.get(doi2);
