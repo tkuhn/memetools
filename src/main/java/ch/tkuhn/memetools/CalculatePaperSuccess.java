@@ -96,6 +96,7 @@ public class CalculatePaperSuccess {
 		}
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
 		terms = new ArrayList<String>();
+		cpyMapKeys = new HashMap<String,String>();
 		cpyLastDay = new HashMap<String,Long>();
 		cpyPaperDays = new HashMap<String,Long>();
 		cpyPaperCount = new HashMap<String,Integer>();
