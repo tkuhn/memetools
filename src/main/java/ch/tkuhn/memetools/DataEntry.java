@@ -36,7 +36,7 @@ public class DataEntry {
 		}
 		date = splitline[0];
 		id = splitline[1];
-		while (splitline[tpos].matches("^[A-Z]:")) {
+		while (splitline[tpos].matches("[A-Z]:.*")) {
 			if (splitline[tpos].startsWith(AUTHORS_MARKER)) {
 				authors = splitline[tpos].substring(AUTHORS_MARKER.length());
 			} else if (splitline[tpos].startsWith(CITATIONS_MARKER)) {
