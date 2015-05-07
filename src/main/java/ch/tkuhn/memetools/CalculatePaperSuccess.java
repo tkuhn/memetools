@@ -148,7 +148,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY"); //, "TOP-MS-" + delta);
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta);
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -157,7 +157,8 @@ public class CalculatePaperSuccess {
 				progress++;
 				logProgress(progress);
 				DataEntry d = new DataEntry(line);
-				ms.recordTerms(d);
+
+				// Calculate C/PY values
 				long thisDay = getDayCount(d.getDate());
 				String doi = d.getId();
 				String[] authList = d.getAuthors().split(" ");
@@ -176,8 +177,17 @@ public class CalculatePaperSuccess {
 						authorMaxCpy = authorCpy;
 					}
 				}
-				// TODO write real data:
-				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy);
+
+				// Calculate meme scores
+				List<String> memes = new ArrayList<String>();
+				ms.recordTerms(d, memes);
+				double topMs = 0;
+				for (String meme : memes) {
+					double thisMs = ms.calculateMemeScoreValues(meme, delta)[3];
+					if (thisMs > topMs) topMs = thisMs;
+				}
+
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, topMs);
 
 				addCpyPaper(journalKey);
 				String cpyKeys = journalKey;
@@ -216,7 +226,7 @@ public class CalculatePaperSuccess {
 		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
 		if (paperDays == 0) return -1.0;
-		return (double) citationCount/paperDays;
+		return (double) citationCount/(paperDays/365);
 	}
 
 	private void addCpyPaper(String key) {

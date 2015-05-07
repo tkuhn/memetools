@@ -1,6 +1,7 @@
 package ch.tkuhn.memetools;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MemeScorer {
@@ -208,6 +209,10 @@ public class MemeScorer {
 	}
 
 	public void recordTerms(DataEntry d) {
+		recordTerms(d, null);
+	}
+
+	public void recordTerms(DataEntry d, List<String> collectMemesList) {
 		t++;
 		if (mode != FAST_SCREEN_MODE) {
 			recordStickingTerms(d, false);
@@ -227,6 +232,9 @@ public class MemeScorer {
 				if (ignoreTerm(s)) continue;
 				if (processed.containsKey(s)) continue;
 				processed.put(s, true);
+				if (collectMemesList != null) {
+					collectMemesList.add(s);
+				}
 				increaseMapEntry(f, s);
 				if (!allCited.contains(term)) {
 					increaseMapEntry(xm, s);
