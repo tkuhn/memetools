@@ -200,11 +200,15 @@ public class CalculatePaperSuccess {
 	}
 
 	private double updateCpyData(String key, long thisDay) {
-		long lastDay = cpyLastDay.get(key);
+		Long lastDay = cpyLastDay.get(key);
+		if (lastDay == null) lastDay = 0l;
 		long dayDiff = thisDay - lastDay;
-		int paperCount = cpyPaperCount.get(key);
-		int citationCount = cpyCitationCount.get(key);
-		long paperDays = cpyPaperDays.get(key);
+		Integer paperCount = cpyPaperCount.get(key);
+		if (paperCount == null) paperCount = 0;
+		Integer citationCount = cpyCitationCount.get(key);
+		if (citationCount == null) citationCount = 0;
+		Long paperDays = cpyPaperDays.get(key);
+		if (paperDays == null) paperDays = 0l;
 		paperDays = paperDays + paperCount*dayDiff;
 		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
@@ -213,11 +217,15 @@ public class CalculatePaperSuccess {
 	}
 
 	private void addCpyPaper(String key) {
-		cpyPaperCount.put(key, cpyPaperCount.get(key)+1);
+		Integer paperCount = cpyPaperCount.get(key);
+		if (paperCount == null) paperCount = 0;
+		cpyPaperCount.put(key, paperCount + 1);
 	}
 
 	private void addCpyCitation(String key) {
-		cpyCitationCount.put(key, cpyCitationCount.get(key) + 1);
+		Integer citationCount = cpyCitationCount.get(key);
+		if (citationCount == null) citationCount = 0;
+		cpyCitationCount.put(key, citationCount + 1);
 	}
 
 	private static long getDayCount(String date) {
