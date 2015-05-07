@@ -226,7 +226,7 @@ public class CalculatePaperSuccess {
 		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
 		if (paperDays == 0) return -1.0;
-		return (double) citationCount/(paperDays/365);
+		return (double) citationCount/(paperDays/365.0);
 	}
 
 	private void addCpyPaper(String key) {
