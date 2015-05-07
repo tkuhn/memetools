@@ -188,6 +188,8 @@ public class CalculatePaperSuccess {
 				}
 				String[] citList = d.getCitations().split(" ");
 				for (String cit : citList) {
+					// Ignore citations that are not backwards in time:
+					if (!cpyMapKeys.containsKey(cit)) continue;
 					for (String k : cpyMapKeys.get(cit).split(" ")) {
 						addCpyCitation(k);
 					}
