@@ -156,7 +156,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputFile1));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta);
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta, "TOP-MS-" + delta + "-MEME");
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -192,12 +192,16 @@ public class CalculatePaperSuccess {
 				List<String> memes = new ArrayList<String>();
 				ms.recordTerms(d, memes);
 				double topMs = 0;
+				String topMeme = "";
 				for (String meme : memes) {
 					double thisMs = ms.calculateMemeScoreValues(meme, delta)[3];
-					if (thisMs > topMs) topMs = thisMs;
+					if (thisMs > topMs) {
+						topMs = thisMs;
+						topMeme = meme;
+					}
 				}
 
-				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, topMs);
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, topMs, topMeme);
 
 				addCpyPaper(journalKey);
 				String cpyKeys = journalKey;
