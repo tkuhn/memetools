@@ -30,14 +30,14 @@ public class CalculatePaperSuccess {
 
 	private File inputFile;
 
-	@Parameter(names = "-o", description = "Output file")
-	private File outputFile;
-
 	@Parameter(names = "-t", description = "File with terms", required = true)
 	private File termsFile;
 
 	@Parameter(names = "-tcol", description = "Index or name of column to read terms (if term file is in CSV format)")
 	private String termCol = "TERM";
+
+	@Parameter(names = "-y", description = "Number of years for which to count article citations")
+	private int citationYears = 3;
 
 	@Parameter(names = "-d", description = "Set delta parameter (controlled noise level)")
 	private int delta = 3;
@@ -62,15 +62,19 @@ public class CalculatePaperSuccess {
 		obj.run();
 	}
 
+	private File outputFile1, outputFile2;
+
 	private MemeScorer ms;
 	private List<String> terms;
-	private CsvListWriter csvWriter;
 	private BufferedReader reader;
+	private Map<String,Long> paperDates;
+	private Map<String,Integer> paperCitations;
 	private Map<String,String> cpyMapKeys;
 	private Map<String,Long> cpyLastDay;
 	private Map<String,Long> cpyPaperDays;
 	private Map<String,Integer> cpyPaperCount;
 	private Map<String,Integer> cpyCitationCount;
+	private long lastDay;
 
 	public CalculatePaperSuccess() {
 	}
@@ -80,6 +84,7 @@ public class CalculatePaperSuccess {
 		try {
 			readTerms();
 			processEntries();
+			writeSuccessColumn();
 		} catch (Throwable th) {
 			log(th);
 			System.exit(1);
@@ -91,11 +96,13 @@ public class CalculatePaperSuccess {
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
-		if (outputFile == null) {
-			outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
-		}
+		outputFile1 = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-1.csv");
+		outputFile2 = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-2.csv");
+
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
 		terms = new ArrayList<String>();
+		paperDates = new HashMap<String,Long>();
+		paperCitations = new HashMap<String,Integer>();
 		cpyMapKeys = new HashMap<String,String>();
 		cpyLastDay = new HashMap<String,Long>();
 		cpyPaperDays = new HashMap<String,Long>();
@@ -144,9 +151,10 @@ public class CalculatePaperSuccess {
 	}
 
 	private void processEntries() throws IOException {
+		CsvListWriter csvWriter = null;
 		try {
 			log("Processing entries and writing CSV file...");
-			Writer w = new BufferedWriter(new FileWriter(outputFile));
+			Writer w = new BufferedWriter(new FileWriter(outputFile1));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta);
 
@@ -161,6 +169,8 @@ public class CalculatePaperSuccess {
 				// Calculate C/PY values
 				long thisDay = getDayCount(d.getDate());
 				String doi = d.getId();
+				paperDates.put(doi, thisDay);
+				paperCitations.put(doi, 0);
 				String[] authList = d.getAuthors().split(" ");
 				String journal = PrepareApsData.getJournalFromDoi(doi);
 				String journalKey = "J:" + journal;
@@ -203,13 +213,40 @@ public class CalculatePaperSuccess {
 					for (String k : cpyMapKeys.get(cit).split(" ")) {
 						addCpyCitation(k);
 					}
+					long date = paperDates.get(cit);
+					if (thisDay < date + 365*citationYears) {
+						paperCitations.put(cit, paperCitations.get(cit) + 1);
+					}
 				}
 				cpyMapKeys.put(doi, cpyKeys);
+				lastDay = thisDay;
 			}
 		} finally {
 			if (csvWriter != null) csvWriter.close();
 			if (reader != null) reader.close();
 		}
+	}
+
+	private void writeSuccessColumn() throws IOException {
+		BufferedReader r = new BufferedReader(new FileReader(outputFile1));
+		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
+		Writer w = new BufferedWriter(new FileWriter(outputFile2));
+		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+		csvWriter.write("ID", "CITATIONS-" + citationYears + "Y");
+
+		csvReader.read();  // ignore header
+		List<String> line;
+		while ((line = csvReader.read()) != null) {
+			String doi = line.get(0);
+			long date = paperDates.get(doi);
+			if (lastDay >= date + 365*citationYears) {
+				csvWriter.write(doi, paperCitations.get(doi));
+			} else {
+				csvWriter.write(doi, "-1");
+			}
+		}
+		csvWriter.close();
+		csvReader.close();
 	}
 
 	private double updateCpyData(String key, long thisDay) {
@@ -225,8 +262,7 @@ public class CalculatePaperSuccess {
 		paperDays = paperDays + paperCount*dayDiff;
 		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
-		if (paperDays == 0) return -1.0;
-		return (double) citationCount/(paperDays/365.0);
+		return (citationCount * 365.0) / (paperDays + 1);
 	}
 
 	private void addCpyPaper(String key) {
