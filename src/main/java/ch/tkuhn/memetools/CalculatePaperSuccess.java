@@ -42,6 +42,9 @@ public class CalculatePaperSuccess {
 	@Parameter(names = "-d", description = "Set delta parameter (controlled noise level)")
 	private int delta = 3;
 
+	@Parameter(names = "-r", description = "Relative frequency threshold")
+	private double relFreqThreshold = 0.25;
+
 	private File logFile;
 
 	public static final void main(String[] args) {
@@ -194,6 +197,7 @@ public class CalculatePaperSuccess {
 				double topMs = 0;
 				String topMeme = "";
 				for (String meme : memes) {
+					if (ms.getRelF(meme) > relFreqThreshold) continue;  // ignore frequent terms
 					double thisMs = ms.calculateMemeScoreValues(meme, delta)[3];
 					if (thisMs > topMs) {
 						topMs = thisMs;
