@@ -43,7 +43,7 @@ public class CalculatePaperSuccess {
 	private int delta = 3;
 
 	@Parameter(names = "-r", description = "Relative frequency threshold")
-	private double relFreqThreshold = 0.25;
+	private double relFreqThreshold = 0.15;
 
 	private File logFile;
 
