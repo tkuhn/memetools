@@ -62,7 +62,7 @@ public class CalculatePaperSuccess {
 		obj.run();
 	}
 
-	private File outputFile1, outputFile2;
+	private File outputTempFile, outputFile;
 
 	private MemeScorer ms;
 	private List<String> terms;
@@ -96,8 +96,8 @@ public class CalculatePaperSuccess {
 		logFile = new File(MemeUtils.getLogDir(), getOutputFileName() + ".log");
 		log("==========");
 
-		outputFile1 = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-1.csv");
-		outputFile2 = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-2.csv");
+		outputTempFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-temp.csv");
+		outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
 
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
 		terms = new ArrayList<String>();
@@ -154,7 +154,7 @@ public class CalculatePaperSuccess {
 		CsvListWriter csvWriter = null;
 		try {
 			log("Processing entries and writing CSV file...");
-			Writer w = new BufferedWriter(new FileWriter(outputFile1));
+			Writer w = new BufferedWriter(new FileWriter(outputTempFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta, "TOP-MS-" + delta + "-MEME");
 
@@ -232,22 +232,26 @@ public class CalculatePaperSuccess {
 	}
 
 	private void writeSuccessColumn() throws IOException {
-		BufferedReader r = new BufferedReader(new FileReader(outputFile1));
+		BufferedReader r = new BufferedReader(new FileReader(outputTempFile));
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
-		Writer w = new BufferedWriter(new FileWriter(outputFile2));
+		Writer w = new BufferedWriter(new FileWriter(outputFile));
 		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
 		csvWriter.write("ID", "CITATIONS-" + citationYears + "Y");
 
-		csvReader.read();  // ignore header
-		List<String> line;
+		// Process header:
+		List<String> line = csvReader.read();
+		line.add("CITATIONS-" + citationYears + "Y");
+		csvWriter.write(line);
+
 		while ((line = csvReader.read()) != null) {
 			String doi = line.get(0);
 			long date = paperDates.get(doi);
 			if (lastDay >= date + 365*citationYears) {
-				csvWriter.write(doi, paperCitations.get(doi));
+				line.add(paperCitations.get(doi).toString());
 			} else {
-				csvWriter.write(doi, "-1");
+				line.add("-1");
 			}
+			csvWriter.write(line);
 		}
 		csvWriter.close();
 		csvReader.close();
