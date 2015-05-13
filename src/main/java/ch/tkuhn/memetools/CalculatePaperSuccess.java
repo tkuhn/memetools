@@ -65,7 +65,7 @@ public class CalculatePaperSuccess {
 		obj.run();
 	}
 
-	private File outputTempFile, outputFile;
+	private File outputTempFile, outputFile, outputMatrixFile;
 
 	private MemeScorer ms;
 	private List<String> terms;
@@ -101,6 +101,7 @@ public class CalculatePaperSuccess {
 
 		outputTempFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-temp.csv");
 		outputFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + ".csv");
+		outputMatrixFile = new File(MemeUtils.getOutputDataDir(), getOutputFileName() + "-matrix.csv");
 
 		ms = new MemeScorer(MemeScorer.GIVEN_TERMLIST_MODE);
 		terms = new ArrayList<String>();
@@ -240,24 +241,36 @@ public class CalculatePaperSuccess {
 		CsvListReader csvReader = new CsvListReader(r, MemeUtils.getCsvPreference());
 		Writer w = new BufferedWriter(new FileWriter(outputFile));
 		CsvListWriter csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-		csvWriter.write("ID", "CITATIONS-" + citationYears + "Y");
+		Writer wm = new BufferedWriter(new FileWriter(outputMatrixFile));
+		CsvListWriter csvMatrixWriter = new CsvListWriter(wm, MemeUtils.getCsvPreference());
 
 		// Process header:
 		List<String> line = csvReader.read();
 		line.add("CITATIONS-" + citationYears + "Y");
 		csvWriter.write(line);
+		line.remove(line.size()-1);
+		line.remove(0);
+		csvMatrixWriter.write(line);
 
 		while ((line = csvReader.read()) != null) {
 			String doi = line.get(0);
 			long date = paperDates.get(doi);
+			boolean completeRow = false;
 			if (lastDay >= date + 365*citationYears) {
 				line.add(paperCitations.get(doi).toString());
+				completeRow = true;
 			} else {
 				line.add("-1");
 			}
 			csvWriter.write(line);
+			if (completeRow) {
+				line.remove(line.size()-1);
+				line.remove(0);
+				csvMatrixWriter.write(line);
+			}
 		}
 		csvWriter.close();
+		csvMatrixWriter.close();
 		csvReader.close();
 	}
 
