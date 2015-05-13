@@ -248,7 +248,7 @@ public class CalculatePaperSuccess {
 		List<String> line = csvReader.read();
 		line.add("CITATIONS-" + citationYears + "Y");
 		csvWriter.write(line);
-		line.remove(line.size()-1);
+		line.remove(line.size()-2);
 		line.remove(0);
 		csvMatrixWriter.write(line);
 
@@ -264,7 +264,7 @@ public class CalculatePaperSuccess {
 			}
 			csvWriter.write(line);
 			if (completeRow) {
-				line.remove(line.size()-1);
+				line.remove(line.size()-2);
 				line.remove(0);
 				csvMatrixWriter.write(line);
 			}
