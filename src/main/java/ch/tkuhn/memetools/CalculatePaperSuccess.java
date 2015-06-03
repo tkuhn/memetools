@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -160,7 +161,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputTempFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "TOP-MS-" + delta, "TOP-MS-" + delta + "-MEME");
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "SELFCIT-MAX-C/Y", "TOP-MS-" + delta, "TOP-MS-" + delta + "-MEME");
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -175,7 +176,7 @@ public class CalculatePaperSuccess {
 				String doi = d.getId();
 				paperDates.put(doi, thisDay);
 				paperCitations.put(doi, 0);
-				String[] authList = d.getAuthors().split(" ");
+				List<String> authList = Arrays.asList(d.getAuthors().split(" "));
 				String journal = PrepareApsData.getJournalFromDoi(doi);
 				String journalKey = "J:" + journal;
 				double journalCpy = updateCpyData(journalKey, thisDay);
@@ -190,6 +191,21 @@ public class CalculatePaperSuccess {
 					if (authorCpy > authorMaxCpy) {
 						authorMaxCpy = authorCpy;
 					}
+				}
+				double selfcitMaxCy = 0.0;
+				for (String cit : d.getCitations().split(" ")) {
+					// Ignore citations that are not backwards in time:
+					if (!cpyMapKeys.containsKey(cit)) continue;
+					for (String k : cpyMapKeys.get(cit).split(" ")) {
+						if (!k.startsWith("A:")) continue;
+						k = k.substring(2);
+						if (authList.contains(k)) {
+							double selfcitCy = getPaperCy(cit, thisDay);
+							if (selfcitCy > selfcitMaxCy) selfcitMaxCy = selfcitCy;
+							continue;
+						}
+					}
+					
 				}
 
 				// Calculate meme scores
@@ -206,7 +222,7 @@ public class CalculatePaperSuccess {
 					}
 				}
 
-				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, topMs, topMeme);
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, selfcitMaxCy, topMs, topMeme);
 
 				addCpyPaper(journalKey);
 				String cpyKeys = journalKey;
@@ -288,6 +304,11 @@ public class CalculatePaperSuccess {
 		cpyPaperDays.put(key, paperDays);
 		cpyLastDay.put(key, thisDay);
 		return (citationCount * 365.0) / (paperDays + 1);
+	}
+
+	private double getPaperCy(String doi, long thisDay) {
+		long dayDiff = thisDay - paperDates.get(doi);
+		return (paperCitations.get(doi) * 365.0) / (dayDiff + 1);
 	}
 
 	private void addCpyPaper(String key) {
