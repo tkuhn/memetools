@@ -68,6 +68,7 @@ public class CalculatePaperSuccess {
 
 	private File outputTempFile, outputFile, outputMatrixFile;
 
+	private int pubcount;
 	private MemeScorer ms;
 	private List<String> terms;
 	private BufferedReader reader;
@@ -78,6 +79,7 @@ public class CalculatePaperSuccess {
 	private Map<String,Long> cpyPaperDays;
 	private Map<String,Integer> cpyPaperCount;
 	private Map<String,Integer> cpyCitationCount;
+	private long firstDay;
 	private long lastDay;
 
 	public CalculatePaperSuccess() {
@@ -113,6 +115,8 @@ public class CalculatePaperSuccess {
 		cpyPaperDays = new HashMap<String,Long>();
 		cpyPaperCount = new HashMap<String,Integer>();
 		cpyCitationCount = new HashMap<String,Integer>();
+		pubcount = 0;
+		firstDay = 0;       
 	}
 
 	private void readTerms() throws IOException {
@@ -161,7 +165,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputTempFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "SELFCIT-MAX-C/Y", "TOP-PS-MEME", "TOP-MS", "TOP-MS-MEME");
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "SELFCIT-MAX-C/Y", "TIME-ABS", "TIME-REL", "TOP-MS", "TOP-MS-MEME");
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -173,6 +177,8 @@ public class CalculatePaperSuccess {
 
 				// Calculate C/PY values
 				long thisDay = getDayCount(d.getDate());
+				if (firstDay == 0) firstDay = thisDay;
+				pubcount++;
 				String doi = d.getId();
 				paperDates.put(doi, thisDay);
 				paperCitations.put(doi, 0);
@@ -223,7 +229,7 @@ public class CalculatePaperSuccess {
 					}
 				}
 
-				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, selfcitMaxCy, topMs, topMsMeme);
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, selfcitMaxCy, thisDay - firstDay, pubcount, topMs, topMsMeme);
 
 				addCpyPaper(journalKey);
 				String cpyKeys = journalKey;
