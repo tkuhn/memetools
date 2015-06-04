@@ -161,7 +161,7 @@ public class CalculatePaperSuccess {
 			log("Processing entries and writing CSV file...");
 			Writer w = new BufferedWriter(new FileWriter(outputTempFile));
 			csvWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
-			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "SELFCIT-MAX-C/Y", "TOP-PS", "TOP-PS-MEME", "TOP-MS", "TOP-MS-MEME");
+			csvWriter.write("ID", "JOURNAL-C/PY", "FIRSTAUTHOR-C/PY", "AUTHOR-MAX-C/PY", "SELFCIT-MAX-C/Y", "TOP-PS-MEME", "TOP-MS", "TOP-MS-MEME");
 
 			reader = new BufferedReader(new FileReader(inputFile));
 			int progress = 0;
@@ -211,9 +211,7 @@ public class CalculatePaperSuccess {
 				// Calculate meme scores
 				List<String> memes = new ArrayList<String>();
 				ms.recordTerms(d, memes);
-				double topPs = 0;
 				double topMs = 0;
-				String topPsMeme = "";
 				String topMsMeme = "";
 				for (String meme : memes) {
 					if (ms.getRelF(meme) > relFreqThreshold) continue;  // ignore frequent terms
@@ -223,14 +221,9 @@ public class CalculatePaperSuccess {
 						topMs = thisMs;
 						topMsMeme = meme;
 					}
-					double thisPs = msValues[2];
-					if (thisPs > topMs) {
-						topPs = thisPs;
-						topPsMeme = meme;
-					}
 				}
 
-				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, selfcitMaxCy, topPs, topPsMeme, topMs, topMsMeme);
+				csvWriter.write(doi, journalCpy, firstAuthorCpy, authorMaxCpy, selfcitMaxCy, topMs, topMsMeme);
 
 				addCpyPaper(journalKey);
 				String cpyKeys = journalKey;
