@@ -3,6 +3,7 @@ package ch.tkuhn.memetools;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MemeScorer {
 
@@ -138,13 +139,17 @@ public class MemeScorer {
 	}
 
 	public void screenTerms(DataEntry d) {
+		screenTerms(d, null);
+	}
+
+	public void screenTerms(DataEntry d, Set<String> collectTerms) {
 		if (mode != FAST_SCREEN_MODE && mode != DECOMPOSED_SCREEN_MODE) {
 			throw new RuntimeException("Not in screen mode");
 		}
-		recordStickingTerms(d, true);
+		recordStickingTerms(d, true, collectTerms);
 	}
 
-	private void recordStickingTerms(DataEntry d, boolean screening) {
+	private void recordStickingTerms(DataEntry d, boolean screening, Set<String> collectTerms) {
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();
 		String allCited = "";
 		for (String c : d.getCitedText()) allCited += "  " + c.trim();
@@ -172,6 +177,7 @@ public class MemeScorer {
 						} else {
 							increaseMapEntry(mm, t);
 						}
+						if (collectTerms != null) collectTerms.add(t);
 						processed.put(t, true);
 					} else if (screening) {
 						termBeginnings.put(t, true);
@@ -215,7 +221,7 @@ public class MemeScorer {
 	public void recordTerms(DataEntry d, List<String> collectMemesList) {
 		t++;
 		if (mode != FAST_SCREEN_MODE) {
-			recordStickingTerms(d, false);
+			recordStickingTerms(d, false, null);
 		}
 		// Record terms from citing article:
 		Map<String,Boolean> processed = new HashMap<String,Boolean>();

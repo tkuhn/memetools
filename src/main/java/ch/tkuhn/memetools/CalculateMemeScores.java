@@ -8,7 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
@@ -26,6 +28,9 @@ public class CalculateMemeScores {
 
 	@Parameter(names = "-o", description = "Output file")
 	private File outputFile;
+
+	@Parameter(names = "-m", description = "Memes per paper output file")
+	private File paperMemesFile;
 
 	@Parameter(names = "-y", description = "Calculate scores for given year")
 	private Integer year;
@@ -65,6 +70,8 @@ public class CalculateMemeScores {
 	private boolean appendMode;
 
 	private MemeScorer ms;
+
+	private CsvListWriter paperMemesWriter;
 
 	public CalculateMemeScores() {
 	}
@@ -118,11 +125,29 @@ public class CalculateMemeScores {
 			logProgress(progress);
 			DataEntry d = new DataEntry(line);
 			if (!considerYear(d.getYear())) continue;
-			ms.screenTerms(d);
+			Set<String> collectTerms = null;
+			if (paperMemesFile != null) collectTerms = new HashSet<String>();
+			ms.screenTerms(d, collectTerms);
+			if (collectTerms != null) {
+				writePaperMemesTable(d, collectTerms);
+			}
 		}
 		reader.close();
+		if (paperMemesWriter != null) paperMemesWriter.close();
 		log("Number of unique terms with meme score > 0: " + ms.getMM().size());
 		ms.fixTerms();
+	}
+
+	private void writePaperMemesTable(DataEntry d, Set<String> collectTerms) throws IOException {
+		if (paperMemesWriter == null) {
+			BufferedWriter w = new BufferedWriter(new FileWriter(paperMemesFile), 64*1024);
+			paperMemesWriter = new CsvListWriter(w, MemeUtils.getCsvPreference());
+			paperMemesWriter.write("PAPER","MEMES...");
+		}
+		List<String> line = new ArrayList<String>();
+		line.add(d.getId());
+		line.addAll(collectTerms);
+		paperMemesWriter.write(line);
 	}
 
 	private void countTerms() throws IOException {
